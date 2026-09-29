@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>UCoverCraft.App</RootNamespace>
+    <AssemblyName>UCoverCraft</AssemblyName>
+    <SupportedOSPlatformVersion>10.0.14393.0</SupportedOSPlatformVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\ucovercraft.ico</ApplicationIcon>
+    <Description>UCoverCraft desktop application.</Description>
+    <AssemblyTitle>UCoverCraft</AssemblyTitle>
+    <Product>UCoverCraft</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UCoverCraft.Core\UCoverCraft.Core.csproj" />
+    <ProjectReference Include="..\UCoverCraft.Pdf\UCoverCraft.Pdf.csproj" />
+    <ProjectReference Include="..\UCoverCraft.Docx\UCoverCraft.Docx.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\assets\ulab-logo.png" Link="assets\ulab-logo.png" />
+    <Resource Include="..\..\assets\ucovercraft.png" Link="assets\ucovercraft.png" />
+  </ItemGroup>
+
+</Project>

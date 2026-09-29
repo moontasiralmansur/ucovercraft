@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>UCoverCraft.Docx</RootNamespace>
+    <Description>DOCX rendering for UCoverCraft.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UCoverCraft.Core\UCoverCraft.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\ulab-logo.png" LogicalName="UCoverCraft.Docx.ulab-logo.png" />
+  </ItemGroup>
+
+</Project>

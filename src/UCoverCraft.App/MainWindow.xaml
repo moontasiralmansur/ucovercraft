@@ -1,0 +1,325 @@
+<Window x:Class="UCoverCraft.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="1180"
+        Height="820"
+        MinWidth="980"
+        MinHeight="640"
+        FontFamily="Segoe UI"
+        FontSize="12"
+        Background="{StaticResource WindowBackgroundBrush}"
+        Icon="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.png"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Border DockPanel.Dock="Top"
+            Background="{StaticResource HeaderBrush}"
+            Padding="20,14">
+      <StackPanel Orientation="Horizontal">
+        <Image x:Name="AppHeaderIcon"
+               Source="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.png"
+               Height="42"
+               Stretch="Uniform"
+               VerticalAlignment="Center"
+               Margin="0,0,14,0" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="{Binding Title}"
+                     FontSize="18"
+                     FontWeight="SemiBold"
+                     Foreground="White" />
+          <TextBlock Text="Developed by Moontasir Al Mansur at ULAB"
+                     FontSize="12"
+                     Foreground="{StaticResource HeaderTextBrush}"
+                     Margin="0,2,0,0" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource CardBorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="20,8">
+      <TextBlock Text="{Binding Status}"
+                 FontSize="11"
+                 Foreground="{StaticResource TextMutedBrush}" />
+    </Border>
+
+    <Grid Margin="16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="460" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <ScrollViewer Grid.Column="0"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <Border Background="{StaticResource ErrorSurfaceBrush}"
+                  BorderBrush="{StaticResource ErrorBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Padding="12,10"
+                  Margin="0,0,0,12"
+                  Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel>
+              <TextBlock Text="Please fix the following:"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource ErrorBrush}"
+                         Margin="0,0,0,6" />
+              <ItemsControl ItemsSource="{Binding ValidationErrors}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               FontSize="12"
+                               Foreground="{StaticResource ErrorBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,2" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Document Type / Title" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Document Type" Style="{StaticResource FieldLabelStyle}" />
+              <ComboBox ItemsSource="{Binding DocumentTypes}"
+                        SelectedItem="{Binding SelectedDocumentType}"
+                        DisplayMemberPath="Label"
+                        Style="{StaticResource FieldComboBoxStyle}" />
+              <TextBlock Text="Title" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
+                       IsEnabled="{Binding IsCustomTitleEditable}"
+                       Style="{StaticResource FieldStyle}" />
+              <TextBlock Text="{Binding DocumentTitleError}" Style="{StaticResource FieldErrorStyle}" />
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Course Information" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Course Title" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding CourseTitle, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
+              <TextBlock Text="{Binding CourseTitleError}" Style="{StaticResource FieldErrorStyle}" />
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                  <TextBlock Text="Course Code" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBox Text="{Binding CourseCode, UpdateSourceTrigger=PropertyChanged}"
+                           Style="{StaticResource FieldStyle}" />
+                  <TextBlock Text="{Binding CourseCodeError}" Style="{StaticResource FieldErrorStyle}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="Section" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBox Text="{Binding Section, UpdateSourceTrigger=PropertyChanged}"
+                           Style="{StaticResource FieldStyle}" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Submitted To" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Name" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding SubmittedToName, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
+              <TextBlock Text="{Binding SubmittedToNameError}" Style="{StaticResource FieldErrorStyle}" />
+              <TextBlock Text="Designation" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding SubmittedToDesignation, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
+              <TextBlock Text="Department" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding SubmittedToDepartment, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Submitted By" Style="{StaticResource SectionHeaderStyle}" />
+              <ItemsControl ItemsSource="{Binding Students}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Margin="0,0,0,10">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="130" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="0"
+                                   Text="Name"
+                                   Style="{StaticResource FieldLabelStyle}" />
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text="ID"
+                                   Style="{StaticResource FieldLabelStyle}" />
+                        <TextBox Grid.Row="1"
+                                 Grid.Column="0"
+                                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldStyle}"
+                                 Margin="0,0,8,0" />
+                        <TextBox Grid.Row="1"
+                                 Grid.Column="1"
+                                 Text="{Binding StudentId, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldStyle}"
+                                 Margin="0,0,8,0" />
+                        <Button Grid.Row="1"
+                                Grid.Column="2"
+                                Content="Remove"
+                                VerticalAlignment="Center"
+                                Command="{Binding DataContext.RemoveStudentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource LinkButtonStyle}" />
+                      </Grid>
+                      <TextBlock Text="{Binding NameError}"
+                                 Style="{StaticResource FieldErrorStyle}"
+                                 Margin="0,4,0,0" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add student"
+                      Command="{Binding AddStudentCommand}"
+                      Style="{StaticResource SecondaryButtonStyle}"
+                      HorizontalAlignment="Left"
+                      Margin="0,2,0,0" />
+              <TextBlock Text="{Binding StudentLimitHint}"
+                         Style="{StaticResource FieldErrorStyle}"
+                         Margin="0,6,0,0" />
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Submission Date" Style="{StaticResource SectionHeaderStyle}" />
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                  <TextBlock Text="Day" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBox Text="{Binding SubmissionDay, UpdateSourceTrigger=PropertyChanged}"
+                           Style="{StaticResource FieldStyle}"
+                           Margin="0" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="Month" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBox Text="{Binding SubmissionMonth, UpdateSourceTrigger=PropertyChanged}"
+                           Style="{StaticResource FieldStyle}"
+                           Margin="0" />
+                </StackPanel>
+                <StackPanel Grid.Column="4">
+                  <TextBlock Text="Year" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBox Text="{Binding SubmissionYear, UpdateSourceTrigger=PropertyChanged}"
+                           Style="{StaticResource FieldStyle}"
+                           Margin="0" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding SubmissionDateError}"
+                         Style="{StaticResource FieldErrorStyle}"
+                         Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Column="2">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="16">
+          <Viewbox Stretch="Uniform">
+            <Border Background="White"
+                    BorderBrush="{StaticResource FieldBorderBrush}"
+                    BorderThickness="1">
+              <Grid Width="{Binding Preview.PageWidth}"
+                    Height="{Binding Preview.PageHeight}">
+                <StackPanel Margin="{Binding Preview.PageMargin}"
+                            TextElement.FontFamily="{Binding Preview.FontFamily}">
+                  <ItemsControl ItemsSource="{Binding Preview.Sections}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Margin="{Binding Margin}">
+                          <Image Source="/assets/ulab-logo.png"
+                                 Width="{Binding LogoWidth}"
+                                 Height="{Binding LogoHeight}"
+                                 Margin="{Binding LogoMargin}"
+                                 Stretch="Fill"
+                                 HorizontalAlignment="Center"
+                                 Visibility="{Binding IsLogo, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                          <ItemsControl ItemsSource="{Binding Lines}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <ItemsControl ItemsSource="{Binding Runs}"
+                                              HorizontalAlignment="Center">
+                                  <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                      <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                  </ItemsControl.ItemsPanel>
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                      <TextBlock Text="{Binding Text}"
+                                                 FontSize="{Binding FontSize}"
+                                                 Style="{StaticResource PreviewTextStyle}" />
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Viewbox>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,12,0,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Button Grid.Column="0"
+                  Content="Export PDF"
+                  Command="{Binding ExportPdfCommand}"
+                  Style="{StaticResource AccentButtonStyle}" />
+          <Button Grid.Column="2"
+                  Content="Export DOCX"
+                  Command="{Binding ExportDocxCommand}"
+                  Style="{StaticResource SecondaryButtonStyle}" />
+        </Grid>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</Window>

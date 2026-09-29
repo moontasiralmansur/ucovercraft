@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>UCoverCraft.Core</RootNamespace>
+    <Description>Domain logic and MVVM building blocks for UCoverCraft.</Description>
+  </PropertyGroup>
+
+</Project>

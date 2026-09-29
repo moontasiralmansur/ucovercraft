@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>UCoverCraft.Pdf</RootNamespace>
+    <Description>PDF rendering for UCoverCraft.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UCoverCraft.Core\UCoverCraft.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\ulab-logo.png" LogicalName="UCoverCraft.Pdf.ulab-logo.png" />
+  </ItemGroup>
+
+</Project>
