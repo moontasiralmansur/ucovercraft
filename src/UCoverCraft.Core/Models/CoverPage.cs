@@ -6,6 +6,10 @@ public sealed class CoverPage
 
     public string DocumentTitle { get; set; } = string.Empty;
 
+    public string Number { get; set; } = string.Empty;
+
+    public string TitleTopic { get; set; } = string.Empty;
+
     public string CourseTitle { get; set; } = string.Empty;
 
     public string CourseCode { get; set; } = string.Empty;
@@ -25,6 +29,7 @@ public sealed class CoverPage
         var errors = new List<string>();
 
         ModelValidation.RequireText(errors, DocumentTitle, nameof(DocumentTitle));
+        ModelValidation.ValidateOptionalPositiveInteger(errors, Number, nameof(Number));
         ModelValidation.RequireText(errors, CourseTitle, nameof(CourseTitle));
         ModelValidation.RequireText(errors, CourseCode, nameof(CourseCode));
 

@@ -183,6 +183,98 @@ public class CoverPreviewViewModelTests
         Assert.Throws<ArgumentNullException>(() => preview.Update(null!));
     }
 
+    [Fact]
+    public void Update_OmitsTheOptionalLines_WhenBothFieldsAreEmpty()
+    {
+        var preview = new CoverPreviewViewModel();
+
+        preview.Update(CreateCoverPage());
+        var title = preview.Sections.Single(section => section.Section == CoverSection.DocumentTitle);
+
+        Assert.Single(title.Lines);
+        Assert.Equal("PROJECT REPORT", LineText(title, 0));
+    }
+
+    [Fact]
+    public void Update_RendersTheNumberInsideTheDocumentTitle()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "7";
+        var preview = new CoverPreviewViewModel();
+
+        preview.Update(coverPage);
+        var title = preview.Sections.Single(section => section.Section == CoverSection.DocumentTitle);
+
+        Assert.Single(title.Lines);
+        Assert.Equal("PROJECT REPORT 07", LineText(title, 0));
+        Assert.True(title.Lines[0].Runs[0].IsBold);
+    }
+
+    [Fact]
+    public void Update_RendersTheTitleTopicLine_ImmediatelyAfterTheDocumentTitle()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.TitleTopic = "Distributed Systems";
+        var preview = new CoverPreviewViewModel();
+
+        preview.Update(coverPage);
+        var title = preview.Sections.Single(section => section.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal(2, title.Lines.Count);
+        Assert.Equal("PROJECT REPORT", LineText(title, 0));
+        Assert.Equal("Title: Distributed Systems", LineText(title, 1));
+        Assert.True(title.Lines[1].Runs[0].IsBold);
+        Assert.False(title.Lines[1].Runs[1].IsBold);
+        Assert.Equal(14d * 96 / 72, title.Lines[1].Runs[1].FontSize, 3);
+    }
+
+    [Fact]
+    public void Update_RendersNumberAndTitleTopic_Together()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "2";
+        coverPage.TitleTopic = "Distributed Systems";
+        var preview = new CoverPreviewViewModel();
+
+        preview.Update(coverPage);
+        var title = preview.Sections.Single(section => section.Section == CoverSection.DocumentTitle);
+        string[] expected = ["PROJECT REPORT 02", "Title: Distributed Systems"];
+
+        Assert.Equal(expected, title.Lines.Select(line => string.Concat(line.Runs.Select(run => run.Text))));
+    }
+
+    [Fact]
+    public void Update_LeavesTheOtherSectionsUntouched_ByTheOptionalFields()
+    {
+        var baseline = CreateCoverPage();
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "9";
+        coverPage.TitleTopic = "Distributed Systems";
+        var preview = new CoverPreviewViewModel();
+        var original = new CoverPreviewViewModel();
+
+        preview.Update(coverPage);
+        original.Update(baseline);
+
+        foreach (CoverSection section in Enum.GetValues<CoverSection>())
+        {
+            if (section == CoverSection.DocumentTitle)
+            {
+                continue;
+            }
+
+            var actual = preview.Sections.Single(candidate => candidate.Section == section);
+            var expected = original.Sections.Single(candidate => candidate.Section == section);
+
+            Assert.Equal(
+                expected.Lines.Select(line => string.Concat(line.Runs.Select(run => run.Text))),
+                actual.Lines.Select(line => string.Concat(line.Runs.Select(run => run.Text))));
+        }
+    }
+
+    private static string LineText(CoverPreviewSection section, int index) =>
+        string.Concat(section.Lines[index].Runs.Select(run => run.Text));
+
     private static string RenderedText(CoverPreviewViewModel preview) =>
         string.Join("|", Runs(preview).Select(run => run.Text));
 

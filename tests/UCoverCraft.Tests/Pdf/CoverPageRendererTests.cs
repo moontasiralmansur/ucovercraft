@@ -310,6 +310,115 @@ public class CoverPageRendererTests : IDisposable
         Assert.Equal(expected, formatted);
     }
 
+    [Fact]
+    public void Render_WritesTheNumberInsideTheDocumentTitleLine()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "3";
+
+        var content = ReadPageContent(Render(coverPage, "number.pdf"));
+
+        Assert.Contains("(PROJECT REPORT 03)", content);
+        Assert.DoesNotContain("(PROJECT REPORT)", content);
+    }
+
+    [Fact]
+    public void Render_WritesTheTitleTopicLine_AfterTheDocumentTitle()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var content = ReadPageContent(Render(coverPage, "title-topic.pdf"));
+        var titleIndex = content.IndexOf("(PROJECT REPORT)", StringComparison.Ordinal);
+        var labelIndex = content.IndexOf("(Title: )", StringComparison.Ordinal);
+        var valueIndex = content.IndexOf("(Distributed Systems)", StringComparison.Ordinal);
+        var courseIndex = content.IndexOf("(Course Title: )", StringComparison.Ordinal);
+
+        Assert.True(titleIndex >= 0, "The document title was not found.");
+        Assert.True(labelIndex > titleIndex, "The title topic label must follow the document title.");
+        Assert.True(valueIndex > labelIndex, "The title topic value must follow its label.");
+        Assert.True(courseIndex > valueIndex, "The course information must follow the title topic.");
+    }
+
+    [Fact]
+    public void Render_OmitsTheOptionalText_WhenBothFieldsAreEmpty()
+    {
+        var content = ReadPageContent(Render(CreateCoverPage(), "no-optionals.pdf"));
+
+        Assert.Contains("(PROJECT REPORT)", content);
+        Assert.DoesNotContain("(Title: ", content);
+        Assert.Equal(15, CountTextRuns(content));
+    }
+
+    [Fact]
+    public void Render_RendersTheNumberBold_AndTheTitleTopicWithABoldLabel()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "2";
+        coverPage.TitleTopic = "Distributed Systems";
+        var path = Render(coverPage, "optional-weights.pdf");
+
+        var (bold, regular) = SplitTextByWeight(ReadRaw(path), ReadPageContent(path));
+
+        Assert.Contains("PROJECT REPORT 02", bold);
+        Assert.DoesNotContain("PROJECT REPORT 02", regular);
+        Assert.Contains("Title: ", bold);
+        Assert.Contains("Distributed Systems", regular);
+        Assert.DoesNotContain("Distributed Systems", bold);
+    }
+
+    [Fact]
+    public void Render_WithNumberAndTitleTopic_SpreadsSectionsToTheBottomOfTheTextArea()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "4";
+        coverPage.TitleTopic = "Distributed Systems";
+        var template = CoverPageTemplate.Reference;
+        var sections = CoverContentBuilder.Build(coverPage, template);
+        var layout = CoverPageLayout.Calculate(sections, template);
+        Assert.True(layout.FitsInTextArea);
+
+        var path = Render(coverPage, "number-title.pdf");
+        using var document = PdfReader.Open(path, PdfDocumentOpenMode.Import);
+        Assert.Equal(1, document.PageCount);
+
+        var lineMm = CoverPageLayout.LineHeightMm(CoverContentBuilder.DefaultFontSizePt);
+        var content = ReadPageContent(path);
+        var baselines = ReadBaselines(content);
+        var titleTopMm = (template.MarginTopMm ?? 0)
+            + (template.LogoTopOffsetMm ?? 0)
+            + (template.LogoHeightMm ?? 0)
+            + layout.GapMm;
+        var dateBottomMm = titleTopMm + ((baselines[0] - baselines[^1]) * 25.4 / 72) + lineMm;
+
+        Assert.Equal(CoverPageTemplate.A4HeightMm - (template.MarginBottomMm ?? 0), dateBottomMm, 2);
+        Assert.Equal(17, CountTextRuns(content));
+        Assert.Equal(
+            layout.TextHeightMm,
+            layout.OccupiedHeightMm + (layout.GapMm * 5),
+            6);
+    }
+
+    [Fact]
+    public void Render_WithTenStudentsNumberAndTitleTopic_KeepsASinglePage()
+    {
+        var coverPage = CreateWorstCaseCoverPage(CoverPage.MaxStudents);
+        coverPage.Number = "12";
+        coverPage.TitleTopic = "Distributed Systems";
+        var template = CoverPageTemplate.Reference;
+        var layout = CoverPageLayout.Calculate(CoverContentBuilder.Build(coverPage, template), template);
+        Assert.True(layout.FitsInTextArea);
+
+        var path = Render(coverPage, "product-max-optionals.pdf");
+        using var document = PdfReader.Open(path, PdfDocumentOpenMode.Import);
+        var content = ReadPageContent(path);
+
+        Assert.Equal(1, document.PageCount);
+        Assert.Contains("(PROJECT REPORT 12)", content);
+        Assert.Contains("(Title: )", content);
+        Assert.Contains("(Distributed Systems)", content);
+    }
+
     private string Render(CoverPage coverPage, string fileName = "cover.pdf")
     {
         var path = Path.Combine(_directory, fileName);

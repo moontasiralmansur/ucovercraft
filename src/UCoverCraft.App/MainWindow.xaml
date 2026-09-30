@@ -91,11 +91,18 @@
                         SelectedItem="{Binding SelectedDocumentType}"
                         DisplayMemberPath="Label"
                         Style="{StaticResource FieldComboBoxStyle}" />
-              <TextBlock Text="Title" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Document Title" Style="{StaticResource FieldLabelStyle}" />
               <TextBox Text="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
                        IsEnabled="{Binding IsCustomTitleEditable}"
                        Style="{StaticResource FieldStyle}" />
               <TextBlock Text="{Binding DocumentTitleError}" Style="{StaticResource FieldErrorStyle}" />
+              <TextBlock Text="Document Number" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
+              <TextBlock Text="{Binding NumberError}" Style="{StaticResource FieldErrorStyle}" />
+              <TextBlock Text="Title/Topic" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox Text="{Binding TitleTopic, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource FieldStyle}" />
             </StackPanel>
           </Border>
 

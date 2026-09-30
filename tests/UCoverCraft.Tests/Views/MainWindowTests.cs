@@ -160,6 +160,89 @@ public class MainWindowTests
     }
 
     [Fact]
+    public void DocumentCard_ExposesNumberAndTitleTopicInputs()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+                var window = new MainWindow();
+                try
+                {
+                    var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                    window.Show();
+                    window.UpdateLayout();
+
+                    viewModel.Number = "1";
+                    viewModel.TitleTopic = "Distributed Systems";
+                    window.UpdateLayout();
+
+                    var card = NearestAncestor<Border>(
+                        Descendants<TextBlock>(window).Single(block => block.Text == "Document Type / Title"));
+                    var fieldLabelStyle = (Style)Application.Current!.Resources["FieldLabelStyle"];
+                    var labels = Descendants<TextBlock>(card)
+                        .Where(block => block.Style == fieldLabelStyle)
+                        .Select(block => block.Text)
+                        .ToList();
+
+                    Assert.Contains("Number", labels);
+                    Assert.Contains("Title/Topic", labels);
+
+                    var inputs = Descendants<TextBox>(card).Select(box => box.Text).ToList();
+
+                    Assert.Equal(3, inputs.Count);
+                    Assert.Contains("ASSIGNMENT", inputs);
+                    Assert.Contains("1", inputs);
+                    Assert.Contains("Distributed Systems", inputs);
+                }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void OptionalFields_RefreshTheLivePreviewImmediately()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                window.Show();
+                window.UpdateLayout();
+
+                viewModel.Number = "1";
+                viewModel.TitleTopic = "Distributed Systems";
+                window.UpdateLayout();
+
+                var texts = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+
+                Assert.Contains("ASSIGNMENT 01", texts);
+                Assert.Contains("Title: ", texts);
+                Assert.Contains("Distributed Systems", texts);
+
+                viewModel.Number = string.Empty;
+                viewModel.TitleTopic = string.Empty;
+                window.UpdateLayout();
+
+                var cleared = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+
+                Assert.Contains("ASSIGNMENT", cleared);
+                Assert.DoesNotContain(cleared, text => text.StartsWith("Title: ", StringComparison.Ordinal));
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void SubmittedBy_FieldsAreLabelledNameAndId()
     {
         RunOnStaThread(() =>

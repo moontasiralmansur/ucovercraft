@@ -180,6 +180,98 @@ public class CoverPageTests
             error => error.Contains("At most 10", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Number_DefaultsToEmpty()
+    {
+        Assert.Equal(string.Empty, new CoverPage().Number);
+    }
+
+    [Fact]
+    public void TitleTopic_DefaultsToEmpty()
+    {
+        Assert.Equal(string.Empty, new CoverPage().TitleTopic);
+    }
+
+    [Fact]
+    public void Number_AndTitleTopic_AreEmptyOnAValidPage()
+    {
+        var page = CreateValidPage();
+
+        Assert.Equal(string.Empty, page.Number);
+        Assert.Equal(string.Empty, page.TitleTopic);
+        Assert.Empty(page.Validate());
+    }
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("01")]
+    [InlineData("7")]
+    [InlineData("999")]
+    public void Validate_AcceptsAPositiveIntegerNumber(string number)
+    {
+        var page = CreateValidPage();
+        page.Number = number;
+
+        Assert.Empty(page.Validate());
+        Assert.True(page.IsValid);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("abc")]
+    [InlineData("3.5")]
+    [InlineData("12a")]
+    public void Validate_RejectsANonPositiveOrNonIntegerNumber(string number)
+    {
+        var page = CreateValidPage();
+        page.Number = number;
+
+        var errors = page.Validate();
+
+        Assert.Contains("Number must be a positive integer.", errors);
+        Assert.False(page.IsValid);
+    }
+
+    [Fact]
+    public void Validate_ReportsTheNumberError_OnlyOnce()
+    {
+        var page = CreateValidPage();
+        page.Number = "-4";
+
+        var errors = page.Validate();
+
+        Assert.Single(errors);
+        Assert.StartsWith(nameof(CoverPage.Number), errors[0]);
+        Assert.Equal("Number must be a positive integer.", errors[0]);
+    }
+
+    [Fact]
+    public void Validate_TreatsAWhitespaceNumberAsEmpty()
+    {
+        var page = CreateValidPage();
+        page.Number = "   ";
+
+        Assert.Empty(page.Validate());
+    }
+
+    [Fact]
+    public void TitleTopic_AcceptsEmptyAndPopulatedValues()
+    {
+        var page = CreateValidPage();
+
+        Assert.Empty(page.Validate());
+
+        page.TitleTopic = "Smart Campus Navigation";
+
+        Assert.Empty(page.Validate());
+        Assert.Equal("Smart Campus Navigation", page.TitleTopic);
+
+        page.TitleTopic = "   ";
+
+        Assert.Empty(page.Validate());
+    }
+
     private static List<Student> CreateStudents(int count) =>
         Enumerable
             .Range(1, count)

@@ -169,6 +169,130 @@ public class CoverPageLayoutTests
         Assert.Equal(0d, layout.SpacingAfterMm[CoverSection.SubmissionDate]);
     }
 
+    [Theory]
+    [InlineData("", "", 1)]
+    [InlineData("01", "", 1)]
+    [InlineData("", "Distributed Systems", 2)]
+    [InlineData("01", "Distributed Systems", 2)]
+    public void Calculate_DocumentTitleHeight_AccountsForTheOptionalLines(
+        string number,
+        string titleTopic,
+        int expectedLineCount)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = number;
+        coverPage.TitleTopic = titleTopic;
+
+        var layout = Calculate(coverPage);
+
+        Assert.Equal(
+            expectedLineCount * CoverPageLayout.LineHeightMm(CoverContentBuilder.DefaultFontSizePt),
+            layout.SectionHeightMm[CoverSection.DocumentTitle],
+            6);
+    }
+
+    [Fact]
+    public void Calculate_GapIsUnchanged_WhenOnlyTheNumberIsSupplied()
+    {
+        var baseline = Calculate(CreateCoverPage());
+        var numbered = CreateCoverPage();
+        numbered.Number = "7";
+
+        var layout = Calculate(numbered);
+
+        Assert.Equal(baseline.GapMm, layout.GapMm, 9);
+        Assert.Equal(baseline.OccupiedHeightMm, layout.OccupiedHeightMm, 9);
+        Assert.Equal(baseline.ContentHeightMm, layout.ContentHeightMm, 9);
+    }
+
+    [Fact]
+    public void Calculate_GapShrinks_WhenTheTitleTopicLineIsAdded()
+    {
+        var baseline = Calculate(CreateCoverPage());
+        var withTitleTopic = CreateCoverPage();
+        withTitleTopic.TitleTopic = "Distributed Systems";
+
+        var layout = Calculate(withTitleTopic);
+
+        Assert.True(layout.GapMm < baseline.GapMm);
+        Assert.Equal(
+            layout.TextHeightMm,
+            layout.OccupiedHeightMm + (layout.GapMm * 5),
+            6);
+    }
+
+    [Theory]
+    [InlineData("", "", 1)]
+    [InlineData("", "", 10)]
+    [InlineData("01", "", 1)]
+    [InlineData("01", "", 10)]
+    [InlineData("", "Distributed Systems", 1)]
+    [InlineData("", "Distributed Systems", 10)]
+    [InlineData("01", "Distributed Systems", 1)]
+    [InlineData("01", "Distributed Systems", 10)]
+    public void Calculate_FillsTheTextArea_ForEveryCombinationAndStudentCount(
+        string number,
+        string titleTopic,
+        int studentCount)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = number;
+        coverPage.TitleTopic = titleTopic;
+        coverPage.Students = Enumerable
+            .Range(1, studentCount)
+            .Select(index => new Student { Name = $"Student {index}", StudentId = $"S-{index:0000}" })
+            .ToList();
+
+        var layout = Calculate(coverPage);
+
+        Assert.True(layout.FitsInTextArea);
+        Assert.Equal(layout.TextHeightMm, layout.ContentHeightMm, 6);
+        Assert.True(layout.GapMm > ReferenceGapMm);
+        Assert.Equal(0d, layout.SpacingAfterMm[CoverSection.SubmissionDate]);
+    }
+
+    [Fact]
+    public void Calculate_FitsTheProductStudentLimit_WithNumberAndTitleTopic()
+    {
+        var coverPage = WorstCaseCoverPage(CoverPage.MaxStudents);
+        coverPage.Number = "12";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var layout = Calculate(coverPage);
+
+        Assert.Equal(10, CoverPage.MaxStudents);
+        Assert.True(layout.FitsInTextArea);
+        Assert.Equal(layout.TextHeightMm, layout.ContentHeightMm, 6);
+        Assert.True(layout.GapMm > ReferenceGapMm);
+    }
+
+    [Fact]
+    public void Calculate_FitsTwentyFourStudents_WhenOnlyTheNumberIsSupplied()
+    {
+        var coverPage = WorstCaseCoverPage(CoverPageLayout.MaxStudents);
+        coverPage.Number = "01";
+
+        var layout = Calculate(coverPage);
+
+        Assert.True(layout.FitsInTextArea);
+        Assert.Equal(layout.TextHeightMm, layout.ContentHeightMm, 6);
+    }
+
+    [Fact]
+    public void Calculate_OverflowsTheTextArea_WhenTheTitleTopicLineEatsIntoTheSafetyBoundary()
+    {
+        var coverPage = WorstCaseCoverPage(CoverPageLayout.MaxStudents);
+        coverPage.Number = "01";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var layout = Calculate(coverPage);
+
+        Assert.False(layout.FitsInTextArea);
+        Assert.Equal(ReferenceGapMm, layout.GapMm, 6);
+        Assert.True(layout.ContentHeightMm > layout.TextHeightMm);
+        Assert.Throws<InvalidOperationException>(() => layout.EnsureFitsInTextArea());
+    }
+
     [Fact]
     public void Calculate_Throws_WhenSectionsIsNull()
     {

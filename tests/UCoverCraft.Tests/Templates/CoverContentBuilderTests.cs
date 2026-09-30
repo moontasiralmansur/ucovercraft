@@ -182,6 +182,234 @@ public class CoverContentBuilderTests
         Assert.Equal(expected, formatted);
     }
 
+    [Theory]
+    [InlineData("ASSIGNMENT", "1", "ASSIGNMENT 01")]
+    [InlineData("LAB REPORT", "3", "LAB REPORT 03")]
+    [InlineData("PROJECT REPORT", "2", "PROJECT REPORT 02")]
+    [InlineData("CUSTOM", "1", "CUSTOM 01")]
+    [InlineData("Smart Campus Navigation", "7", "Smart Campus Navigation 07")]
+    [InlineData("PROJECT REPORT", "12", "PROJECT REPORT 12")]
+    [InlineData("PROJECT REPORT", "123", "PROJECT REPORT 123")]
+    public void Build_DocumentTitle_AppendsTheFormattedNumber(string documentTitle, string number, string expected)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.DocumentTitle = documentTitle;
+        coverPage.Number = number;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal(expected, Flatten(section).Single());
+        Assert.Single(section.Lines);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Build_DocumentTitle_KeepsTheTitleOnly_WhenNumberIsEmpty(string number)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = number;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal("PROJECT REPORT", Flatten(section).Single());
+        Assert.Single(section.Lines);
+    }
+
+    [Fact]
+    public void Build_DocumentTitle_TreatsANullNumberAsEmpty()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = null!;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal("PROJECT REPORT", Flatten(section).Single());
+    }
+
+    [Fact]
+    public void Build_DocumentTitle_UsesTheResolvedTitle_WithTheNumber()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.DocumentTitle = CoverPageTemplate.ResolveDocumentTitle(DocumentType.Assignment, null);
+        coverPage.Number = "1";
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal("ASSIGNMENT 01", Flatten(section).Single());
+    }
+
+    [Fact]
+    public void Build_DocumentTitle_CombinesACustomTitleWithTheNumber()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.DocumentTitle = CoverPageTemplate.ResolveDocumentTitle(DocumentType.Custom, "Smart Campus Navigation");
+        coverPage.Number = "1";
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Equal("Smart Campus Navigation 01", Flatten(section).Single());
+    }
+
+    [Fact]
+    public void Build_TitleTopic_RendersALineImmediatelyAfterTheDocumentTitle()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.TitleTopic = "Smart Campus Navigation";
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+        string[] expected = ["PROJECT REPORT", "Title: Smart Campus Navigation"];
+
+        Assert.Equal(expected, Flatten(section));
+        Assert.Equal(2, section.Lines[1].Count);
+        Assert.Equal("Title: ", section.Lines[1][0].Text);
+        Assert.True(section.Lines[1][0].IsBold);
+        Assert.Equal("Smart Campus Navigation", section.Lines[1][1].Text);
+        Assert.False(section.Lines[1][1].IsBold);
+        Assert.Equal(14d, section.Lines[1][1].FontSizePt);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Build_TitleTopic_OmitsTheLine_WhenEmpty(string titleTopic)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.TitleTopic = titleTopic;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+
+        Assert.Single(section.Lines);
+        Assert.Equal("PROJECT REPORT", Flatten(section).Single());
+    }
+
+    [Fact]
+    public void Build_TitleTopic_KeepsTheDocumentTitleSeparateFromTheNumber()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "5";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+        string[] expected = ["PROJECT REPORT 05", "Title: Distributed Systems"];
+
+        Assert.Equal(expected, Flatten(section));
+    }
+
+    [Theory]
+    [InlineData("", "", "PROJECT REPORT", null)]
+    [InlineData("2", "", "PROJECT REPORT 02", null)]
+    [InlineData("", "Smart Campus Navigation", "PROJECT REPORT", "Smart Campus Navigation")]
+    [InlineData("2", "Smart Campus Navigation", "PROJECT REPORT 02", "Smart Campus Navigation")]
+    public void Build_NumberAndTitleTopic_ProduceTheExpectedDocumentTitleLines(
+        string number,
+        string titleTopic,
+        string expectedTitleLine,
+        string? expectedTopic)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = number;
+        coverPage.TitleTopic = titleTopic;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.DocumentTitle);
+        var lines = Flatten(section);
+
+        Assert.Equal(expectedTopic is null ? 1 : 2, lines.Count);
+        Assert.Equal(expectedTitleLine, lines[0]);
+
+        if (expectedTopic is not null)
+        {
+            Assert.Equal($"Title: {expectedTopic}", lines[1]);
+        }
+    }
+
+    [Fact]
+    public void Build_KeepsExistingOutput_WhenBothOptionalFieldsAreEmpty()
+    {
+        var coverPage = CreateCoverPage();
+        var withOptionals = CreateCoverPage();
+        withOptionals.Number = string.Empty;
+        withOptionals.TitleTopic = string.Empty;
+
+        var sections = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference);
+        var unchanged = CoverContentBuilder.Build(withOptionals, CoverPageTemplate.Reference);
+
+        Assert.Equal(ExpectedSectionOrder, sections.Select(section => section.Section));
+        Assert.Equal(
+            sections.Select(section => string.Join("|", Flatten(section))),
+            unchanged.Select(section => string.Join("|", Flatten(section))));
+
+        var title = sections.Single(content => content.Section == CoverSection.DocumentTitle);
+        Assert.Single(title.Lines);
+        Assert.Equal("PROJECT REPORT", Flatten(title).Single());
+        Assert.DoesNotContain(Flatten(title), line => line.StartsWith("Title:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Build_LeavesTheOtherSectionsUntouched_ByTheOptionalFields()
+    {
+        var baseline = CreateCoverPage();
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "9";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var sections = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference);
+        var original = CoverContentBuilder.Build(baseline, CoverPageTemplate.Reference);
+
+        foreach (CoverSection section in Enum.GetValues<CoverSection>())
+        {
+            if (section == CoverSection.DocumentTitle)
+            {
+                continue;
+            }
+
+            Assert.Equal(
+                string.Join("|", Flatten(original.Single(content => content.Section == section))),
+                string.Join("|", Flatten(sections.Single(content => content.Section == section))));
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void FormatDocumentTitle_UsesTheTitleOnly_WhenTheNumberIsMissing(string number)
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = number;
+
+        Assert.Equal("PROJECT REPORT", CoverContentBuilder.FormatDocumentTitle(coverPage));
+    }
+
+    [Fact]
+    public void FormatDocumentTitle_PadsTheNumberToAtLeastTwoDigits()
+    {
+        var coverPage = CreateCoverPage();
+
+        coverPage.Number = "1";
+        Assert.Equal("PROJECT REPORT 01", CoverContentBuilder.FormatDocumentTitle(coverPage));
+
+        coverPage.Number = "9";
+        Assert.Equal("PROJECT REPORT 09", CoverContentBuilder.FormatDocumentTitle(coverPage));
+
+        coverPage.Number = "12";
+        Assert.Equal("PROJECT REPORT 12", CoverContentBuilder.FormatDocumentTitle(coverPage));
+    }
+
+    [Fact]
+    public void FormatDocumentTitle_Throws_WhenCoverPageIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => CoverContentBuilder.FormatDocumentTitle(null!));
+    }
+
     private static CoverSectionContent Section(CoverSection section) =>
         CoverContentBuilder.Build(CreateCoverPage(), CoverPageTemplate.Reference)
             .Single(content => content.Section == section);

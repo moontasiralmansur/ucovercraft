@@ -19,6 +19,7 @@ public sealed class MainViewModel : ObservableObject
     private static readonly string[] ValidatedFieldNames =
     [
         nameof(DocumentTitle),
+        nameof(Number),
         nameof(CourseTitle),
         nameof(CourseCode),
         nameof(SubmittedToName),
@@ -31,6 +32,8 @@ public sealed class MainViewModel : ObservableObject
     [
         nameof(SelectedDocumentType),
         nameof(DocumentTitle),
+        nameof(Number),
+        nameof(TitleTopic),
         nameof(CourseTitle),
         nameof(CourseCode),
         nameof(Section),
@@ -74,6 +77,8 @@ public sealed class MainViewModel : ObservableObject
     private string _status = "Ready";
     private DocumentTypeOption? _selectedDocumentType;
     private string _documentTitle = string.Empty;
+    private string _number = string.Empty;
+    private string _titleTopic = string.Empty;
     private string _courseTitle = string.Empty;
     private string _courseCode = string.Empty;
     private string _section = string.Empty;
@@ -84,6 +89,7 @@ public sealed class MainViewModel : ObservableObject
     private string _submissionMonth = string.Empty;
     private string _submissionYear = string.Empty;
     private string _documentTitleError = string.Empty;
+    private string _numberError = string.Empty;
     private string _courseTitleError = string.Empty;
     private string _courseCodeError = string.Empty;
     private string _submittedToNameError = string.Empty;
@@ -160,6 +166,18 @@ public sealed class MainViewModel : ObservableObject
 
             Revalidate();
         }
+    }
+
+    public string Number
+    {
+        get => _number;
+        set => SetEdited(ref _number, value);
+    }
+
+    public string TitleTopic
+    {
+        get => _titleTopic;
+        set => SetProperty(ref _titleTopic, value ?? string.Empty);
     }
 
     public string CourseTitle
@@ -243,6 +261,12 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _documentTitleError, value);
     }
 
+    public string NumberError
+    {
+        get => _numberError;
+        private set => SetProperty(ref _numberError, value);
+    }
+
     public string CourseTitleError
     {
         get => _courseTitleError;
@@ -292,6 +316,8 @@ public sealed class MainViewModel : ObservableObject
     private CoverPage BuildCoverPage(DateOnly submissionDate) => new()
     {
         DocumentTitle = _documentTitle,
+        Number = _number,
+        TitleTopic = _titleTopic,
         CourseTitle = _courseTitle,
         CourseCode = _courseCode,
         Section = string.IsNullOrWhiteSpace(_section) ? null : _section,
@@ -415,6 +441,7 @@ public sealed class MainViewModel : ObservableObject
         var errors = new List<string>(BuildCoverPage(submissionDate).Validate());
 
         DocumentTitleError = Visible(nameof(DocumentTitle), TakeError(errors, nameof(CoverPage.DocumentTitle), "Document title"));
+        NumberError = Visible(nameof(Number), TakeError(errors, nameof(CoverPage.Number), "Number"));
         CourseTitleError = Visible(nameof(CourseTitle), TakeError(errors, nameof(CoverPage.CourseTitle), "Course title"));
         CourseCodeError = Visible(nameof(CourseCode), TakeError(errors, nameof(CoverPage.CourseCode), "Course code"));
         SubmittedToNameError = Visible(
@@ -442,6 +469,7 @@ public sealed class MainViewModel : ObservableObject
 
         var summary = new List<string>();
         AddIfNotEmpty(summary, DocumentTitleError);
+        AddIfNotEmpty(summary, NumberError);
         AddIfNotEmpty(summary, CourseTitleError);
         AddIfNotEmpty(summary, CourseCodeError);
         AddIfNotEmpty(summary, SubmittedToNameError);

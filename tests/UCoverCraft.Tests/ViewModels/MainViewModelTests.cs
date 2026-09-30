@@ -594,4 +594,233 @@ public class MainViewModelTests
             viewModel.ValidationErrors,
             error => error.Contains("At most 10", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void NumberAndTitleTopic_DefaultToEmpty()
+    {
+        var viewModel = new MainViewModel();
+
+        Assert.Equal(string.Empty, viewModel.Number);
+        Assert.Equal(string.Empty, viewModel.TitleTopic);
+        Assert.Equal(string.Empty, viewModel.NumberError);
+        Assert.Equal(string.Empty, viewModel.BuildCoverPage().Number);
+        Assert.Equal(string.Empty, viewModel.BuildCoverPage().TitleTopic);
+    }
+
+    [Fact]
+    public void FreshViewModel_HasNoNumberError()
+    {
+        var viewModel = new MainViewModel();
+
+        Assert.False(viewModel.HasErrors);
+        Assert.Equal(string.Empty, viewModel.NumberError);
+        Assert.Empty(viewModel.ValidationErrors);
+    }
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("01")]
+    [InlineData("12")]
+    [InlineData("999")]
+    public void Number_AcceptsPositiveIntegers(string number)
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        viewModel.Number = number;
+
+        Assert.Equal(string.Empty, viewModel.NumberError);
+        Assert.False(viewModel.HasErrors);
+        Assert.True(viewModel.Validate());
+        Assert.Equal(number, viewModel.BuildCoverPage().Number);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("abc")]
+    [InlineData("3.5")]
+    public void Number_ReportsAnError_ForNonPositiveAndNonIntegerValues(string number)
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        viewModel.Number = number;
+
+        Assert.Equal("Number must be a positive integer.", viewModel.NumberError);
+        Assert.Contains("Number must be a positive integer.", viewModel.ValidationErrors);
+        Assert.True(viewModel.HasErrors);
+        Assert.False(viewModel.Validate());
+    }
+
+    [Fact]
+    public void NumberError_Clears_WhenTheNumberBecomesValid()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        viewModel.Number = "0";
+        Assert.True(viewModel.HasErrors);
+
+        viewModel.Number = "4";
+
+        Assert.Equal(string.Empty, viewModel.NumberError);
+        Assert.False(viewModel.HasErrors);
+        Assert.Empty(viewModel.ValidationErrors);
+    }
+
+    [Fact]
+    public void TitleTopic_IsEditable_AndAcceptsEmptyValues()
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        Assert.Equal(string.Empty, viewModel.TitleTopic);
+
+        viewModel.TitleTopic = "Distributed Systems";
+
+        Assert.Equal("Distributed Systems", viewModel.TitleTopic);
+        Assert.True(viewModel.Validate());
+
+        viewModel.TitleTopic = string.Empty;
+
+        Assert.Equal(string.Empty, viewModel.TitleTopic);
+        Assert.True(viewModel.Validate());
+        Assert.False(viewModel.HasErrors);
+    }
+
+    [Fact]
+    public void BuildCoverPage_MapsTheOptionalNumberAndTitleTopic()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        viewModel.Number = "03";
+        viewModel.TitleTopic = "Compiler Design";
+
+        var page = viewModel.BuildCoverPage();
+
+        Assert.Equal("LAB REPORT", page.DocumentTitle);
+        Assert.Equal("03", page.Number);
+        Assert.Equal("Compiler Design", page.TitleTopic);
+    }
+
+    [Fact]
+    public void BuildCoverPage_KeepsBothOptionalFieldsEmpty_ByDefault()
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        var page = viewModel.BuildCoverPage();
+
+        Assert.Equal(string.Empty, page.Number);
+        Assert.Equal(string.Empty, page.TitleTopic);
+    }
+
+    [Fact]
+    public void Preview_OmitsTheOptionalLines_WhenBothFieldsAreEmpty()
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        string[] expected = ["LAB REPORT"];
+
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+        Assert.DoesNotContain(
+            viewModel.Preview.Sections.SelectMany(section => section.Lines).SelectMany(line => line.Runs),
+            run => run.Text == "Title: ");
+    }
+
+    [Fact]
+    public void Preview_UpdatesWhenNumberChanges()
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        viewModel.Number = "3";
+
+        string[] expected = ["LAB REPORT 03"];
+
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+        Assert.Contains("LAB REPORT 03", RenderedText(viewModel.Preview));
+    }
+
+    [Fact]
+    public void Preview_UpdatesWhenTitleTopicChanges()
+    {
+        var viewModel = CreatePopulatedViewModel();
+
+        viewModel.TitleTopic = "Operating Systems";
+
+        string[] expected = ["LAB REPORT", "Title: Operating Systems"];
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+
+        viewModel.TitleTopic = string.Empty;
+
+        string[] updated = ["LAB REPORT"];
+        Assert.Equal(updated, DocumentTitleLines(viewModel));
+    }
+
+    [Fact]
+    public void Preview_UpdatesWhenNumberIsCleared()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        viewModel.Number = "7";
+
+        viewModel.Number = string.Empty;
+
+        string[] expected = ["LAB REPORT"];
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Assignment, "1", "ASSIGNMENT 01")]
+    [InlineData(DocumentType.LabReport, "3", "LAB REPORT 03")]
+    [InlineData(DocumentType.ProjectReport, "2", "PROJECT REPORT 02")]
+    public void Preview_AppendsTheNumberToThePresetTitle(DocumentType type, string number, string expected)
+    {
+        var viewModel = new MainViewModel();
+        SelectDocumentType(viewModel, type);
+        viewModel.Number = number;
+
+        Assert.Equal(expected, Assert.Single(DocumentTitleLines(viewModel)));
+        Assert.False(viewModel.IsCustomTitleEditable);
+    }
+
+    [Fact]
+    public void Preview_AppendsTheNumberToTheCustomTitle()
+    {
+        var viewModel = new MainViewModel();
+        SelectDocumentType(viewModel, DocumentType.Custom);
+        viewModel.DocumentTitle = "Smart Campus Navigation";
+        viewModel.Number = "1";
+
+        Assert.Equal("Smart Campus Navigation 01", Assert.Single(DocumentTitleLines(viewModel)));
+        Assert.Equal("Smart Campus Navigation", viewModel.BuildCoverPage().DocumentTitle);
+    }
+
+    [Fact]
+    public void PresetTitle_IgnoresEdits_WhenNumberAndTitleTopicAreSet()
+    {
+        var viewModel = new MainViewModel();
+        SelectDocumentType(viewModel, DocumentType.Assignment);
+        viewModel.Number = "1";
+        viewModel.TitleTopic = "Distributed Systems";
+
+        viewModel.DocumentTitle = "Something Else";
+
+        Assert.Equal("ASSIGNMENT", viewModel.DocumentTitle);
+        string[] expected = ["ASSIGNMENT 01", "Title: Distributed Systems"];
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+        Assert.False(viewModel.IsCustomTitleEditable);
+    }
+
+    [Fact]
+    public void Preview_KeepsTheNumberAndTitleTopicOnSeparateLines()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        viewModel.Number = "4";
+        viewModel.TitleTopic = "Distributed Systems";
+
+        string[] expected = ["LAB REPORT 04", "Title: Distributed Systems"];
+
+        Assert.Equal(expected, DocumentTitleLines(viewModel));
+    }
+
+    private static string[] DocumentTitleLines(MainViewModel viewModel) =>
+        viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.DocumentTitle)
+            .Lines
+            .Select(line => string.Concat(line.Runs.Select(run => run.Text)))
+            .ToArray();
 }

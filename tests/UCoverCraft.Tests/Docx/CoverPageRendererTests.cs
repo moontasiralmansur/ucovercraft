@@ -455,6 +455,128 @@ public class CoverPageRendererTests : IDisposable
         Assert.Throws<ArgumentException>(() => CoverPageRenderer.Render(CreateCoverPage(), "   "));
     }
 
+    [Fact]
+    public void Render_WritesTheNumberInsideTheDocumentTitleParagraph()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "03";
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "number.docx"));
+
+        Assert.Equal(12, paragraphs.Count);
+        Assert.Equal("PROJECT REPORT 03", ParagraphText(paragraphs[1]));
+    }
+
+    [Fact]
+    public void Render_WritesTheTitleTopicParagraph_ImmediatelyAfterTheDocumentTitle()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "title-topic.docx"));
+
+        Assert.Equal(13, paragraphs.Count);
+        Assert.Equal(0, paragraphs.FindIndex(paragraph => paragraph.Descendants(W + "drawing").Any()));
+        Assert.Equal("PROJECT REPORT", ParagraphText(paragraphs[1]));
+        Assert.Equal("Title: Distributed Systems", ParagraphText(paragraphs[2]));
+        Assert.StartsWith("Course Title: ", ParagraphText(paragraphs[3]));
+    }
+
+    [Fact]
+    public void Render_WritesTheNumberAndTheTitleTopicLine_WhenBothAreSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "4";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "number-title.docx"));
+
+        Assert.Equal(13, paragraphs.Count);
+        Assert.Equal("PROJECT REPORT 04", ParagraphText(paragraphs[1]));
+        Assert.Equal("Title: Distributed Systems", ParagraphText(paragraphs[2]));
+    }
+
+    [Fact]
+    public void Render_OmitsTheOptionalParagraphs_WhenBothFieldsAreEmpty()
+    {
+        var path = Render(CreateCoverPage(), "no-optionals.docx");
+        var text = ReadAllText(path);
+
+        Assert.Contains("PROJECT REPORT", text);
+        Assert.DoesNotContain(
+            ReadParagraphs(path),
+            paragraph => ParagraphText(paragraph).StartsWith("Title: ", StringComparison.Ordinal));
+        Assert.Equal(12, ReadParagraphs(path).Count);
+    }
+
+    [Fact]
+    public void Render_RendersTheTitleTopicLabelBoldAndValueRegular()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "2";
+        coverPage.TitleTopic = "Distributed Systems";
+
+        var (bold, regular) = SplitRunsByWeight(Render(coverPage, "optional-weights.docx"));
+
+        Assert.Contains("PROJECT REPORT 02", bold);
+        Assert.Contains("Title: ", bold);
+        Assert.Contains("Distributed Systems", regular);
+        Assert.DoesNotContain("Distributed Systems", bold);
+    }
+
+    [Fact]
+    public void Render_CentersEveryParagraph_WithCalculatedLayoutSpacing_ForNumberAndTitleTopic()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.Number = "4";
+        coverPage.TitleTopic = "Distributed Systems";
+        var layout = CoverPageLayout.Calculate(
+            CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference),
+            CoverPageTemplate.Reference);
+        var gapTwips = (int)Math.Round(layout.GapMm * 1440 / 25.4, MidpointRounding.AwayFromZero);
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "number-title-spacing.docx"));
+        int[] expectedSpaceAfter = [gapTwips, 0, gapTwips, 0, 0, gapTwips, 0, 0, gapTwips, 0, 0, gapTwips, 0];
+
+        Assert.Equal(expectedSpaceAfter.Length, paragraphs.Count);
+
+        for (var i = 0; i < paragraphs.Count; i++)
+        {
+            var spacing = paragraphs[i].Element(W + "pPr")!.Element(W + "spacing");
+            Assert.NotNull(spacing);
+            Assert.Equal(expectedSpaceAfter[i], int.Parse(spacing!.Attribute(W + "after")!.Value));
+            Assert.Equal(i == 0 ? "96" : "0", spacing.Attribute(W + "before")!.Value);
+            Assert.Equal("276", spacing.Attribute(W + "line")!.Value);
+            Assert.Equal("center", paragraphs[i].Element(W + "pPr")!.Element(W + "jc")!.Attribute(W + "val")!.Value);
+        }
+    }
+
+    [Fact]
+    public void Render_WithTenStudentsNumberAndTitleTopic_KeepsASinglePage()
+    {
+        var coverPage = CreateWorstCaseCoverPage(CoverPage.MaxStudents);
+        coverPage.Number = "12";
+        coverPage.TitleTopic = "Distributed Systems";
+        var layout = CoverPageLayout.Calculate(
+            CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference),
+            CoverPageTemplate.Reference);
+        Assert.True(layout.FitsInTextArea);
+        Assert.Equal(layout.TextHeightMm, layout.ContentHeightMm, 6);
+
+        var path = Render(coverPage, "product-max-optionals.docx");
+        var document = ReadDocument(path);
+        var body = document.Root!.Element(W + "body")!;
+
+        Assert.Single(body.Elements(W + "sectPr"));
+        Assert.Empty(document.Descendants(W + "br"));
+
+        var paragraphs = ReadParagraphs(path);
+        Assert.Equal(1 + 2 + 3 + 4 + (CoverPage.MaxStudents + 1) + 1, paragraphs.Count);
+        Assert.Equal("PROJECT REPORT 12", ParagraphText(paragraphs[1]));
+        Assert.Equal("Title: Distributed Systems", ParagraphText(paragraphs[2]));
+        Assert.Equal("Date of Submission: 13 June, 2026", ParagraphText(paragraphs[^1]));
+    }
+
     private string Render(CoverPage coverPage, string fileName = "cover.docx")
     {
         var path = Path.Combine(_directory, fileName);

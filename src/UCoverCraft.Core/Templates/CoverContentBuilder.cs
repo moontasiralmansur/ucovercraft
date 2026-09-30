@@ -14,6 +14,25 @@ public static class CoverContentBuilder
         return submissionDate.ToString("d MMMM, yyyy", CultureInfo.InvariantCulture);
     }
 
+    public static string FormatDocumentTitle(CoverPage coverPage)
+    {
+        ArgumentNullException.ThrowIfNull(coverPage);
+
+        var title = coverPage.DocumentTitle ?? string.Empty;
+        var number = coverPage.Number?.Trim() ?? string.Empty;
+        if (number.Length == 0)
+        {
+            return title;
+        }
+
+        var display = int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) &&
+            value > 0
+                ? value.ToString("D2", CultureInfo.InvariantCulture)
+                : number;
+
+        return string.Concat(title, " ", display);
+    }
+
     public static IReadOnlyList<CoverSectionContent> Build(CoverPage coverPage, CoverPageTemplate template)
     {
         ArgumentNullException.ThrowIfNull(coverPage);
@@ -47,7 +66,15 @@ public static class CoverContentBuilder
         switch (section)
         {
             case CoverSection.DocumentTitle:
-                lines.Add([new CoverTextRun(coverPage.DocumentTitle, size, headingBold)]);
+                lines.Add([new CoverTextRun(FormatDocumentTitle(coverPage), size, headingBold)]);
+                if (!string.IsNullOrWhiteSpace(coverPage.TitleTopic))
+                {
+                    lines.Add(
+                    [
+                        new CoverTextRun("Title: ", size, headingBold),
+                        new CoverTextRun(coverPage.TitleTopic, size, false),
+                    ]);
+                }
                 break;
 
             case CoverSection.CourseInformation:
