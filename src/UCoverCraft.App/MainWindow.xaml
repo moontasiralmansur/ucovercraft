@@ -55,7 +55,7 @@
       <ScrollViewer Grid.Column="0"
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled">
-        <StackPanel>
+        <StackPanel MaxWidth="420">
           <Border Background="{StaticResource ErrorSurfaceBrush}"
                   BorderBrush="{StaticResource ErrorBorderBrush}"
                   BorderThickness="1"
@@ -85,24 +85,36 @@
 
           <Border Style="{StaticResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Document Type / Title" Style="{StaticResource SectionHeaderStyle}" />
-              <TextBlock Text="Document Type" Style="{StaticResource FieldLabelStyle}" />
-              <ComboBox ItemsSource="{Binding DocumentTypes}"
-                        SelectedItem="{Binding SelectedDocumentType}"
-                        DisplayMemberPath="Label"
-                        Style="{StaticResource FieldComboBoxStyle}" />
-              <TextBlock Text="Document Title" Style="{StaticResource FieldLabelStyle}" />
-              <TextBox Text="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
-                       IsEnabled="{Binding IsCustomTitleEditable}"
-                       Style="{StaticResource FieldStyle}" />
-              <TextBlock Text="{Binding DocumentTitleError}" Style="{StaticResource FieldErrorStyle}" />
-              <TextBlock Text="Document Number" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Cover Page Type" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Cover Page Type" Style="{StaticResource FieldLabelStyle}" />
+              <Grid Margin="0,0,0,10">
+                <ComboBox ItemsSource="{Binding DocumentTypes}"
+                          SelectedItem="{Binding SelectedDocumentType}"
+                          DisplayMemberPath="Label"
+                          Margin="0"
+                          Style="{StaticResource FieldComboBoxStyle}" />
+                <TextBlock Text="Select document type..."
+                           Margin="8,0,26,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding IsDocumentTypePlaceholderVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
+              </Grid>
+              <StackPanel Visibility="{Binding IsCustomTitleEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <TextBlock Text="Cover Page Title" Style="{StaticResource FieldLabelStyle}" />
+                <TextBox Text="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource FieldStyle}" />
+                <TextBlock Text="{Binding DocumentTitleError}" Style="{StaticResource FieldErrorStyle}" />
+              </StackPanel>
+              <TextBlock Text="Number (optional)" Style="{StaticResource FieldLabelStyle}" />
               <TextBox Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}"
                        Style="{StaticResource FieldStyle}" />
               <TextBlock Text="{Binding NumberError}" Style="{StaticResource FieldErrorStyle}" />
-              <TextBlock Text="Title/Topic" Style="{StaticResource FieldLabelStyle}" />
-              <TextBox Text="{Binding TitleTopic, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
+              <StackPanel Visibility="{Binding IsTopicTitleVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <TextBlock Text="Topic / Title (optional)" Style="{StaticResource FieldLabelStyle}" />
+                <TextBox Text="{Binding TitleTopic, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource FieldStyle}" />
+              </StackPanel>
             </StackPanel>
           </Border>
 

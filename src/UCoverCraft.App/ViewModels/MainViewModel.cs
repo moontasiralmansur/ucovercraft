@@ -143,11 +143,17 @@ public sealed class MainViewModel : ObservableObject
             _touchedFields.Add(nameof(DocumentTitle));
             OnPropertyChanged(nameof(DocumentTitle));
             OnPropertyChanged(nameof(IsCustomTitleEditable));
+            OnPropertyChanged(nameof(IsDocumentTypePlaceholderVisible));
+            OnPropertyChanged(nameof(IsTopicTitleVisible));
             Revalidate();
         }
     }
 
     public bool IsCustomTitleEditable => SelectedDocumentType?.Value == DocumentType.Custom;
+
+    public bool IsDocumentTypePlaceholderVisible => SelectedDocumentType is null;
+
+    public bool IsTopicTitleVisible => SelectedDocumentType is not null;
 
     public string DocumentTitle
     {
@@ -440,7 +446,7 @@ public sealed class MainViewModel : ObservableObject
         var submissionDate = ResolveSubmissionDate(out var dateError);
         var errors = new List<string>(BuildCoverPage(submissionDate).Validate());
 
-        DocumentTitleError = Visible(nameof(DocumentTitle), TakeError(errors, nameof(CoverPage.DocumentTitle), "Document title"));
+        DocumentTitleError = Visible(nameof(DocumentTitle), TakeError(errors, nameof(CoverPage.DocumentTitle), "Cover page title"));
         NumberError = Visible(nameof(Number), TakeError(errors, nameof(CoverPage.Number), "Number"));
         CourseTitleError = Visible(nameof(CourseTitle), TakeError(errors, nameof(CoverPage.CourseTitle), "Course title"));
         CourseCodeError = Visible(nameof(CourseCode), TakeError(errors, nameof(CoverPage.CourseCode), "Course code"));

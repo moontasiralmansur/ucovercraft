@@ -187,41 +187,370 @@ public class MainWindowTests
     }
 
     [Fact]
-    public void DocumentCard_ExposesNumberAndTitleTopicInputs()
+    public void CoverPageTypeCard_ExposesTheNumberAndTopicTitleInputs()
     {
         RunOnStaThread(() =>
         {
             EnsureApplication();
 
-                var window = new MainWindow();
-                try
-                {
-                    var viewModel = SelectDocumentType(window, DocumentType.Assignment);
-                    window.Show();
-                    window.UpdateLayout();
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                window.Show();
+                window.UpdateLayout();
 
-                    viewModel.Number = "1";
-                    viewModel.TitleTopic = "Distributed Systems";
-                    window.UpdateLayout();
+                viewModel.Number = "1";
+                viewModel.TitleTopic = "Distributed Systems";
+                window.UpdateLayout();
 
-                    var card = NearestAncestor<Border>(
-                        Descendants<TextBlock>(window).Single(block => block.Text == "Document Type / Title"));
-                    var fieldLabelStyle = (Style)Application.Current!.Resources["FieldLabelStyle"];
-                    var labels = Descendants<TextBlock>(card)
-                        .Where(block => block.Style == fieldLabelStyle)
-                        .Select(block => block.Text)
-                        .ToList();
+                var card = CoverPageTypeCard(window);
+                var labels = VisibleFieldLabels(card);
 
-                    Assert.Contains("Document Number", labels);
-                    Assert.Contains("Title/Topic", labels);
+                Assert.Equal(
+                    new[] { "Cover Page Type", "Number (optional)", "Topic / Title (optional)" },
+                    labels);
+                Assert.Single(Descendants<ComboBox>(card));
 
-                    var inputs = Descendants<TextBox>(card).Select(box => box.Text).ToList();
+                var inputs = VisibleTextBoxes(card).Select(box => box.Text).ToList();
 
-                    Assert.Equal(3, inputs.Count);
-                    Assert.Contains("ASSIGNMENT", inputs);
-                    Assert.Contains("1", inputs);
-                    Assert.Contains("Distributed Systems", inputs);
-                }
+                Assert.Equal(2, inputs.Count);
+                Assert.Contains("1", inputs);
+                Assert.Contains("Distributed Systems", inputs);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeCard_ShowsOnlyTheComboBoxAndNumberOnStartup()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var header = CoverPageTypeHeader(window);
+                var card = CoverPageTypeCard(window);
+                var placeholder = Descendants<TextBlock>(card)
+                    .Single(block => block.Text == "Select document type...");
+
+                Assert.Equal("Cover Page Type", header.Text);
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.False(viewModel.IsTopicTitleVisible);
+                Assert.Equal(Visibility.Visible, placeholder.Visibility);
+
+                var labels = VisibleFieldLabels(card);
+
+                Assert.Equal(new[] { "Cover Page Type", "Number (optional)" }, labels);
+
+                var inputs = VisibleTextBoxes(card);
+
+                Assert.Single(inputs);
+                Assert.Equal(string.Empty, inputs[0].Text);
+                Assert.Equal(string.Empty, viewModel.Number);
+                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Cover Page Title")));
+                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Topic / Title (optional)")));
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Assignment)]
+    [InlineData(DocumentType.LabReport)]
+    [InlineData(DocumentType.ProjectReport)]
+    [InlineData(DocumentType.Custom)]
+    public void NumberField_IsVisibleForEveryCoverPageType(DocumentType type)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, type);
+                window.Show();
+                window.UpdateLayout();
+
+                viewModel.Number = "7";
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+                var numberBox = TextBoxAfter(card, "Number (optional)");
+
+                Assert.Contains("Number (optional)", VisibleFieldLabels(card));
+                Assert.True(IsEffectivelyVisible(numberBox));
+                Assert.Equal("7", numberBox.Text);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Assignment)]
+    [InlineData(DocumentType.LabReport)]
+    [InlineData(DocumentType.ProjectReport)]
+    [InlineData(DocumentType.Custom)]
+    public void TopicTitleField_IsVisibleForEveryCoverPageType_AndMapsToTitleTopic(DocumentType type)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, type);
+                window.Show();
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+                var label = Descendants<TextBlock>(card)
+                    .Single(block => block.Text == "Topic / Title (optional)");
+                var topicBox = TextBoxAfter(card, "Topic / Title (optional)");
+
+                Assert.True(viewModel.IsTopicTitleVisible);
+                Assert.True(IsEffectivelyVisible(label));
+                Assert.True(IsEffectivelyVisible(topicBox));
+
+                viewModel.TitleTopic = "Distributed Systems";
+                window.UpdateLayout();
+
+                Assert.Equal("Distributed Systems", topicBox.Text);
+
+                topicBox.Text = "Compiler Design";
+
+                Assert.Equal("Compiler Design", viewModel.TitleTopic);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Assignment)]
+    [InlineData(DocumentType.LabReport)]
+    [InlineData(DocumentType.ProjectReport)]
+    public void PresetTypes_DoNotShowACoverPageTitleFieldOrTheAutomaticTitleHint(DocumentType type)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, type);
+                window.Show();
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+                var labels = VisibleFieldLabels(card);
+
+                Assert.False(viewModel.IsCustomTitleEditable);
+                Assert.DoesNotContain("Cover Page Title", labels);
+                Assert.DoesNotContain("Document Title", labels);
+                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Cover Page Title")));
+                Assert.DoesNotContain(
+                    Descendants<TextBlock>(window),
+                    block => block.Text == "Automatically set from Document Type.");
+                Assert.Contains("Number (optional)", labels);
+                Assert.Contains("Topic / Title (optional)", labels);
+                Assert.Equal(
+                    viewModel.DocumentTypes.First(option => option.Value == type).Label,
+                    viewModel.DocumentTitle);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CustomCoverPageTitleError_UsesTheUpdatedWordingInlineAndInTheSummary()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Custom);
+                window.Show();
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+                var titleBox = TextBoxAfter(card, "Cover Page Title");
+
+                titleBox.Text = "   ";
+                window.UpdateLayout();
+
+                Assert.Equal("Cover page title is required.", viewModel.DocumentTitleError);
+                Assert.Contains("Cover page title is required.", viewModel.ValidationErrors);
+
+                var inline = Descendants<TextBlock>(card)
+                    .Single(block => block.Text == "Cover page title is required.");
+
+                Assert.True(IsEffectivelyVisible(inline));
+
+                var banner = NearestAncestor<Border>(
+                    Descendants<TextBlock>(window).Single(block => block.Text == "Please fix the following:"));
+                var bannerTexts = Descendants<TextBlock>(banner).Select(block => block.Text).ToList();
+
+                Assert.Contains("Cover page title is required.", bannerTexts);
+                Assert.DoesNotContain(bannerTexts, text => text.StartsWith("Document title", StringComparison.Ordinal));
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void FormCards_AreCenteredWithinTheFormViewport()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var scrollViewer = Descendants<ScrollViewer>(window)
+                    .Single(viewer => viewer.Content is StackPanel);
+                var container = Assert.IsType<StackPanel>(scrollViewer.Content);
+                var cards = container.Children
+                    .OfType<Border>()
+                    .Where(border => border.IsVisible)
+                    .ToList();
+
+                Assert.Equal(HorizontalAlignment.Stretch, container.HorizontalAlignment);
+                Assert.True(container.MaxWidth > 0);
+                Assert.True(scrollViewer.ViewportWidth > container.MaxWidth);
+                Assert.NotEmpty(cards);
+
+                AssertCardsAreCentered(scrollViewer, container, cards);
+
+                window.Width = window.MinWidth;
+                window.UpdateLayout();
+
+                AssertCardsAreCentered(scrollViewer, container, cards);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void Custom_ShowsAnEditableCoverPageTitleAboveTheTopicTitleField()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Custom);
+                window.Show();
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+                var labels = VisibleFieldLabels(card);
+
+                Assert.Equal(
+                    new[]
+                    {
+                        "Cover Page Type",
+                        "Cover Page Title",
+                        "Number (optional)",
+                        "Topic / Title (optional)",
+                    },
+                    labels);
+                Assert.True(viewModel.IsCustomTitleEditable);
+                Assert.DoesNotContain("Document Title", labels);
+
+                var titleBox = TextBoxAfter(card, "Cover Page Title");
+
+                Assert.True(IsEffectivelyVisible(titleBox));
+                Assert.True(titleBox.IsEnabled);
+
+                titleBox.Text = "Smart Campus Navigation";
+
+                Assert.Equal("Smart Campus Navigation", viewModel.DocumentTitle);
+                Assert.Equal("Smart Campus Navigation", viewModel.BuildCoverPage().DocumentTitle);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void DocumentTypePlaceholder_IsShownOnStartup_AndRemovedAfterSelectingAPreset()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var placeholder = Descendants<TextBlock>(window)
+                    .Single(block => block.Text == "Select document type...");
+
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.True(viewModel.IsDocumentTypePlaceholderVisible);
+                Assert.False(viewModel.IsTopicTitleVisible);
+                Assert.Equal(Visibility.Visible, placeholder.Visibility);
+                Assert.DoesNotContain(
+                    Descendants<TextBlock>(window),
+                    block => block.Text == "Automatically set from Document Type.");
+                Assert.Equal(
+                    new[] { "ASSIGNMENT", "LAB REPORT", "PROJECT REPORT", "CUSTOM" },
+                    viewModel.DocumentTypes.Select(option => option.Label));
+
+                SelectDocumentType(window, DocumentType.Assignment);
+                window.UpdateLayout();
+
+                Assert.NotNull(viewModel.SelectedDocumentType);
+                Assert.False(viewModel.IsDocumentTypePlaceholderVisible);
+                Assert.True(viewModel.IsTopicTitleVisible);
+                Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+                Assert.Equal("ASSIGNMENT", viewModel.DocumentTitle);
+            }
             finally
             {
                 window.Close();
@@ -340,6 +669,22 @@ public class MainWindowTests
         });
     }
 
+    private static void AssertCardsAreCentered(
+        ScrollViewer scrollViewer,
+        StackPanel container,
+        IReadOnlyList<Border> cards)
+    {
+        foreach (var card in cards)
+        {
+            var left = card.TransformToAncestor(scrollViewer).Transform(new Point(0, 0)).X;
+            var right = left + card.ActualWidth;
+
+            Assert.Equal(container.ActualWidth, card.ActualWidth, 3);
+            Assert.True(card.ActualWidth < scrollViewer.ViewportWidth);
+            Assert.True(Math.Abs(left - (scrollViewer.ViewportWidth - right)) < 0.5);
+        }
+    }
+
     private static UCoverCraft.App.App EnsureApplication()
     {
         var application = Application.Current as UCoverCraft.App.App;
@@ -359,6 +704,57 @@ public class MainWindowTests
         viewModel.SelectedDocumentType =
             viewModel.DocumentTypes.First(option => option.Value == type);
         return viewModel;
+    }
+
+    private static Style ResourceStyle(string key) => (Style)Application.Current!.Resources[key];
+
+    private static TextBlock CoverPageTypeHeader(MainWindow window) =>
+        Descendants<TextBlock>(window)
+            .Single(block => block.Text == "Cover Page Type" && block.Style == ResourceStyle("SectionHeaderStyle"));
+
+    private static Border CoverPageTypeCard(MainWindow window) =>
+        NearestAncestor<Border>(CoverPageTypeHeader(window));
+
+    private static IReadOnlyList<string> VisibleFieldLabels(Border card) =>
+        Descendants<TextBlock>(card)
+            .Where(block => block.Style == ResourceStyle("FieldLabelStyle"))
+            .Where(block => IsEffectivelyVisible(block))
+            .Select(block => block.Text)
+            .ToList();
+
+    private static IReadOnlyList<TextBox> VisibleTextBoxes(Border card) =>
+        Descendants<TextBox>(card).Where(block => IsEffectivelyVisible(block)).ToList();
+
+    private static TextBox TextBoxAfter(Border card, string labelText)
+    {
+        var label = Descendants<TextBlock>(card).Single(block => block.Text == labelText);
+        var children = ((Panel)VisualTreeHelper.GetParent(label)).Children;
+        var start = children.IndexOf(label);
+
+        for (var i = start + 1; i < children.Count; i++)
+        {
+            if (children[i] is TextBox box)
+            {
+                return box;
+            }
+        }
+
+        throw new InvalidOperationException($"No textbox follows '{labelText}'.");
+    }
+
+    private static bool IsEffectivelyVisible(DependencyObject? node)
+    {
+        while (node is not null)
+        {
+            if (node is UIElement element && element.Visibility != Visibility.Visible)
+            {
+                return false;
+            }
+
+            node = VisualTreeHelper.GetParent(node);
+        }
+
+        return true;
     }
 
     private static double[] OpaqueChannelMean(BitmapSource source)
