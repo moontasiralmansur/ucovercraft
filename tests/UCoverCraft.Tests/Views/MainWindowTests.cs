@@ -143,9 +143,36 @@ public class MainWindowTests
                 Assert.True(resource.PixelWidth > 0);
                 Assert.True(resource.PixelHeight > 0);
 
+                var iconFrames = BitmapDecoder.Create(
+                    new Uri(
+                        $"pack://application:,,,/{appAssembly};component/assets/ucovercraft.ico",
+                        UriKind.Absolute),
+                    BitmapCreateOptions.None,
+                    BitmapCacheOption.OnLoad).Frames;
+                var iconFrameSizes = new[] { 16, 24, 32, 48, 64, 128, 256 };
+                Assert.Equal(
+                    iconFrameSizes,
+                    iconFrames.Select(frame => frame.PixelWidth).OrderBy(size => size).ToArray());
+
                 var windowIcon = Assert.IsAssignableFrom<BitmapSource>(window.Icon);
-                Assert.Equal(resource.PixelWidth, windowIcon.PixelWidth);
-                Assert.Equal(resource.PixelHeight, windowIcon.PixelHeight);
+                Assert.Contains(windowIcon.PixelWidth, iconFrameSizes);
+                Assert.Contains(windowIcon.PixelHeight, iconFrameSizes);
+
+                var largestFrame = iconFrames.Single(frame => frame.PixelWidth == 256);
+                var corner = new byte[4];
+                new FormatConvertedBitmap(largestFrame, PixelFormats.Bgra32, null, 0)
+                    .CopyPixels(new Int32Rect(0, 0, 1, 1), corner, 4, 0);
+                Assert.Equal(0, corner[3]);
+
+                var iconOpaqueMean = OpaqueChannelMean(largestFrame);
+                var pngOpaqueMean = OpaqueChannelMean(resource);
+                for (var channel = 0; channel < pngOpaqueMean.Length; channel++)
+                {
+                    Assert.InRange(
+                        iconOpaqueMean[channel],
+                        pngOpaqueMean[channel] - 6,
+                        pngOpaqueMean[channel] + 6);
+                }
 
                 var headerIcon = Assert.IsAssignableFrom<BitmapSource>(window.AppHeaderIcon.Source);
                 Assert.Equal(resource.PixelWidth, headerIcon.PixelWidth);
@@ -185,7 +212,7 @@ public class MainWindowTests
                         .Select(block => block.Text)
                         .ToList();
 
-                    Assert.Contains("Number", labels);
+                    Assert.Contains("Document Number", labels);
                     Assert.Contains("Title/Topic", labels);
 
                     var inputs = Descendants<TextBox>(card).Select(box => box.Text).ToList();
@@ -292,6 +319,39 @@ public class MainWindowTests
         viewModel.SelectedDocumentType =
             viewModel.DocumentTypes.First(option => option.Value == type);
         return viewModel;
+    }
+
+    private static double[] OpaqueChannelMean(BitmapSource source)
+    {
+        var bitmap = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
+        bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
+
+        var sums = new double[4];
+        var count = 0;
+        for (var offset = 0; offset < pixels.Length; offset += 4)
+        {
+            if (pixels[offset + 3] != 255)
+            {
+                continue;
+            }
+
+            for (var channel = 0; channel < sums.Length; channel++)
+            {
+                sums[channel] += pixels[offset + channel];
+            }
+
+            count++;
+        }
+
+        Assert.True(count > 0);
+
+        for (var channel = 0; channel < sums.Length; channel++)
+        {
+            sums[channel] /= count;
+        }
+
+        return sums;
     }
 
     private static T NearestAncestor<T>(DependencyObject node)

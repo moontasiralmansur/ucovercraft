@@ -23,6 +23,7 @@
   <ItemGroup>
     <Resource Include="..\..\assets\ulab-logo.png" Link="assets\ulab-logo.png" />
     <Resource Include="..\..\assets\ucovercraft.png" Link="assets\ucovercraft.png" />
+    <Resource Include="..\..\assets\ucovercraft.ico" Link="assets\ucovercraft.ico" />
   </ItemGroup>
 
 </Project>

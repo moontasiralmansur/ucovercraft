@@ -9,7 +9,7 @@
         FontFamily="Segoe UI"
         FontSize="12"
         Background="{StaticResource WindowBackgroundBrush}"
-        Icon="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.png"
+        Icon="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.ico"
         WindowStartupLocation="CenterScreen">
   <DockPanel>
     <Border DockPanel.Dock="Top"
