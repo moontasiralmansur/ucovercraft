@@ -108,6 +108,28 @@ public class CoverPageTests
     }
 
     [Fact]
+    public void SubmissionDate_DefaultsToUnset()
+    {
+        var page = new CoverPage();
+
+        Assert.Equal(default(DateOnly), page.SubmissionDate);
+        Assert.Contains(
+            page.Validate(),
+            error => error.StartsWith(nameof(CoverPage.SubmissionDate), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SubmissionDate_KeepsTheSuppliedDate()
+    {
+        var page = CreateValidPage();
+
+        page.SubmissionDate = new DateOnly(2026, 6, 13);
+
+        Assert.Equal(new DateOnly(2026, 6, 13), page.SubmissionDate);
+        Assert.Empty(page.Validate());
+    }
+
+    [Fact]
     public void Validate_CollectsAllErrors_AtOnce()
     {
         var page = new CoverPage();

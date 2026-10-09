@@ -114,6 +114,55 @@ public class CoverPageRendererTests : IDisposable
     }
 
     [Fact]
+    public void Render_WritesTheDateLabelWithoutAValue_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        var path = Render(coverPage, "no-date.pdf");
+        using var document = PdfReader.Open(path, PdfDocumentOpenMode.Import);
+        var content = ReadPageContent(path);
+
+        Assert.Equal(1, document.PageCount);
+        Assert.Contains("(Date of Submission: )", content);
+        Assert.DoesNotContain("1 January", content);
+        Assert.DoesNotContain("0001", content);
+        Assert.Equal(14, CountTextRuns(content));
+    }
+
+    [Fact]
+    public void Render_WritesTheSubmissionDate_WhenADateIsSupplied()
+    {
+        var path = Render(CreateCoverPage(), "with-date.pdf");
+        using var document = PdfReader.Open(path, PdfDocumentOpenMode.Import);
+        var content = ReadPageContent(path);
+        var studentIndex = content.IndexOf("(John Smith", StringComparison.Ordinal);
+        var dateLabelIndex = content.IndexOf("(Date of Submission: )", StringComparison.Ordinal);
+        var dateValueIndex = content.IndexOf("(13 June, 2026)", StringComparison.Ordinal);
+
+        Assert.Equal(1, document.PageCount);
+        Assert.Contains("(Date of Submission: )", content);
+        Assert.Contains("(13 June, 2026)", content);
+        Assert.Equal(15, CountTextRuns(content));
+        Assert.True(studentIndex >= 0, "The student list was not found.");
+        Assert.True(dateLabelIndex > studentIndex, "The date label must be drawn after the student list.");
+        Assert.True(dateValueIndex > dateLabelIndex, "The date value must follow its label.");
+    }
+
+    [Fact]
+    public void Render_WritesThirtyDecember2026_AsTheDateValue()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = new DateOnly(2026, 12, 30);
+
+        var content = ReadPageContent(Render(coverPage, "december-date.pdf"));
+
+        Assert.Contains("(Date of Submission: )", content);
+        Assert.Contains("(30 December, 2026)", content);
+        Assert.DoesNotContain("13 June", content);
+    }
+
+    [Fact]
     public void Render_RendersLabelsBoldAndValuesRegular()
     {
         var path = Render(CreateCoverPage());

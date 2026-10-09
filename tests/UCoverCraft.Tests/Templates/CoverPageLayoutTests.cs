@@ -119,6 +119,65 @@ public class CoverPageLayoutTests
     }
 
     [Fact]
+    public void Calculate_ReservesOneLineForTheDateLabel_WhenNoDateIsSupplied()
+    {
+        var withDate = Calculate(CreateCoverPage());
+        var withoutDate = Calculate(CreateCoverPageWithoutDate());
+        var lineMm = CoverPageLayout.LineHeightMm(CoverContentBuilder.DefaultFontSizePt);
+
+        Assert.Equal(lineMm, withDate.SectionHeightMm[CoverSection.SubmissionDate], 6);
+        Assert.Equal(lineMm, withoutDate.SectionHeightMm[CoverSection.SubmissionDate], 6);
+        Assert.Equal(withDate.OccupiedHeightMm, withoutDate.OccupiedHeightMm, 6);
+        Assert.Equal(Enum.GetValues<CoverSection>().Length, withoutDate.SectionHeightMm.Count);
+    }
+
+    [Fact]
+    public void Calculate_FillsTheTextArea_WhenNoDateIsSupplied()
+    {
+        var layout = Calculate(CreateCoverPageWithoutDate());
+        var gapCount = CoverPageTemplate.Reference.SectionOrder.Count - 1;
+
+        Assert.True(layout.FitsInTextArea);
+        Assert.Equal(layout.TextHeightMm, layout.ContentHeightMm, 6);
+        Assert.Equal(layout.TextHeightMm, layout.OccupiedHeightMm + (layout.GapMm * gapCount), 6);
+        Assert.True(layout.GapMm > ReferenceGapMm);
+        Assert.Equal(0d, layout.SpacingAfterMm[CoverSection.SubmissionDate]);
+    }
+
+    [Fact]
+    public void Calculate_KeepsTheSameGap_WhenNoDateIsSupplied()
+    {
+        var withDate = Calculate(CreateCoverPage());
+        var withoutDate = Calculate(CreateCoverPageWithoutDate());
+
+        Assert.Equal(withDate.GapMm, withoutDate.GapMm, 9);
+        Assert.Equal(withDate.ContentHeightMm, withoutDate.ContentHeightMm, 6);
+        Assert.Equal(
+            withDate.OccupiedHeightMm + (withDate.GapMm * 5),
+            withoutDate.OccupiedHeightMm + (withoutDate.GapMm * 5),
+            6);
+    }
+
+    [Fact]
+    public void Calculate_CountsEveryRenderedLine_IncludingTheDateLabel()
+    {
+        var coverPage = CreateCoverPageWithoutDate();
+        var sections = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference);
+        var layout = CoverPageLayout.Calculate(sections, CoverPageTemplate.Reference);
+        var lineMm = CoverPageLayout.LineHeightMm(CoverContentBuilder.DefaultFontSizePt);
+
+        var renderedLines = sections
+            .Where(section => section.Section != CoverSection.Logo)
+            .Sum(section => section.Lines.Count);
+
+        Assert.Equal(11, renderedLines);
+        Assert.Equal(
+            layout.SectionHeightMm[CoverSection.Logo] + (renderedLines * lineMm),
+            layout.OccupiedHeightMm,
+            6);
+    }
+
+    [Fact]
     public void LineHeight_MatchesTheLineSpacingFactor()
     {
         Assert.Equal(1.15d, CoverPageLayout.LineSpacingFactor);
@@ -311,6 +370,13 @@ public class CoverPageLayoutTests
     {
         var sections = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference);
         return CoverPageLayout.Calculate(sections, CoverPageTemplate.Reference);
+    }
+
+    private static CoverPage CreateCoverPageWithoutDate()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+        return coverPage;
     }
 
     private static CoverPage CreateCoverPage() => new()

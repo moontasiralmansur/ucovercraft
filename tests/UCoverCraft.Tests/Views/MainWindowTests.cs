@@ -270,6 +270,46 @@ public class MainWindowTests
     }
 
     [Fact]
+    public void SubmissionDateLabel_IsVisibleBeforeADateIsSupplied_AndShowsTheValueAfterwards()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                window.Show();
+                window.UpdateLayout();
+
+                var before = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+
+                Assert.Contains("Date of Submission: ", before);
+                Assert.DoesNotContain(before, text => text.Contains("0001", StringComparison.Ordinal));
+                Assert.DoesNotContain(before, text => text.Contains("June", StringComparison.Ordinal));
+                Assert.Equal(string.Empty, viewModel.SubmissionDay);
+                Assert.Equal(string.Empty, viewModel.SubmissionMonth);
+                Assert.Equal(string.Empty, viewModel.SubmissionYear);
+
+                viewModel.SubmissionDay = "13";
+                viewModel.SubmissionMonth = "6";
+                viewModel.SubmissionYear = "2026";
+                window.UpdateLayout();
+
+                var after = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+
+                Assert.Contains("Date of Submission: ", after);
+                Assert.Contains("13 June, 2026", after);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void SubmittedBy_FieldsAreLabelledNameAndId()
     {
         RunOnStaThread(() =>

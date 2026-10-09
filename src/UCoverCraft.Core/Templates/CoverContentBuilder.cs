@@ -127,7 +127,12 @@ public static class CoverContentBuilder
                 lines.Add(
                 [
                     new CoverTextRun("Date of Submission: ", size, headingBold),
-                    new CoverTextRun(FormatSubmissionDate(coverPage.SubmissionDate), size, false),
+                    new CoverTextRun(
+                        coverPage.SubmissionDate == default
+                            ? string.Empty
+                            : FormatSubmissionDate(coverPage.SubmissionDate),
+                        size,
+                        false),
                 ]);
                 break;
         }

@@ -364,6 +364,69 @@ public class CoverPageRendererTests : IDisposable
     }
 
     [Fact]
+    public void Render_WritesTheSubmissionDateAsTheFinalParagraph_WhenADateIsSupplied()
+    {
+        var paragraphs = ReadParagraphs(Render(CreateCoverPage(), "with-date.docx"));
+
+        Assert.Equal(12, paragraphs.Count);
+        Assert.Equal("Date of Submission: 13 June, 2026", ParagraphText(paragraphs[^1]));
+    }
+
+    [Fact]
+    public void Render_WritesTheDateLabelAsTheFinalParagraph_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        var path = Render(coverPage, "no-date.docx");
+        var text = ReadAllText(path);
+        var paragraphs = ReadParagraphs(path);
+
+        Assert.Contains("Date of Submission: ", text);
+        Assert.DoesNotContain("1 January", text);
+        Assert.DoesNotContain("0001", text);
+        Assert.Equal(12, paragraphs.Count);
+        Assert.Equal("Date of Submission: ", ParagraphText(paragraphs[^1]));
+        Assert.Equal("John Smith (S-1002)", ParagraphText(paragraphs[^2]));
+    }
+
+    [Fact]
+    public void Render_CentersEveryParagraph_WithCalculatedLayoutSpacing_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+        var layout = CoverPageLayout.Calculate(
+            CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference),
+            CoverPageTemplate.Reference);
+        var gapTwips = (int)Math.Round(layout.GapMm * 1440 / 25.4, MidpointRounding.AwayFromZero);
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "no-date-spacing.docx"));
+        int[] expectedSpaceAfter = [gapTwips, gapTwips, 0, 0, gapTwips, 0, 0, gapTwips, 0, 0, gapTwips, 0];
+
+        Assert.Equal(expectedSpaceAfter.Length, paragraphs.Count);
+
+        for (var i = 0; i < paragraphs.Count; i++)
+        {
+            var spacing = paragraphs[i].Element(W + "pPr")!.Element(W + "spacing");
+            Assert.NotNull(spacing);
+            Assert.Equal(expectedSpaceAfter[i], int.Parse(spacing!.Attribute(W + "after")!.Value));
+            Assert.Equal(i == 0 ? "96" : "0", spacing.Attribute(W + "before")!.Value);
+            Assert.Equal("center", paragraphs[i].Element(W + "pPr")!.Element(W + "jc")!.Attribute(W + "val")!.Value);
+        }
+    }
+
+    [Fact]
+    public void Render_WritesThirtyDecember2026_AsTheDateValue()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = new DateOnly(2026, 12, 30);
+
+        var paragraphs = ReadParagraphs(Render(coverPage, "december-date.docx"));
+
+        Assert.Equal("Date of Submission: 30 December, 2026", ParagraphText(paragraphs[^1]));
+    }
+
+    [Fact]
     public void Render_RendersEveryStudent_WhenStudentCountVaries()
     {
         var single = CreateCoverPage();

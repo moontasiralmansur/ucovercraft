@@ -141,6 +141,83 @@ public class CoverContentBuilderTests
     }
 
     [Fact]
+    public void Build_SubmissionDate_RendersOnlyTheLabel_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(section.Lines);
+
+        Assert.Equal("Date of Submission: ", Flatten(section).Single());
+        Assert.Equal(2, line.Count);
+        Assert.Equal("Date of Submission: ", line[0].Text);
+        Assert.True(line[0].IsBold);
+        Assert.Equal(string.Empty, line[1].Text);
+        Assert.False(line[1].IsBold);
+    }
+
+    [Fact]
+    public void Build_SubmissionDate_KeepsTheSectionInOrder_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        var sections = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference);
+
+        Assert.Equal(ExpectedSectionOrder, sections.Select(section => section.Section));
+    }
+
+    [Fact]
+    public void Build_SubmissionDate_DoesNotRenderAPlaceholderDate_WhenNoDateIsSupplied()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        var rendered = string.Join(
+            "|",
+            CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+                .SelectMany(section => section.Lines)
+                .SelectMany(line => line)
+                .Select(run => run.Text));
+
+        Assert.Contains("Date of Submission: |", rendered + "|");
+        Assert.DoesNotContain("1 January", rendered);
+        Assert.DoesNotContain("0001", rendered);
+    }
+
+    [Fact]
+    public void Build_SubmissionDate_RendersTheValidDateExactly()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = new DateOnly(2026, 12, 30);
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(section.Lines);
+
+        Assert.Equal("Date of Submission: 30 December, 2026", Flatten(section).Single());
+        Assert.Equal("Date of Submission: ", line[0].Text);
+        Assert.Equal("30 December, 2026", line[1].Text);
+    }
+
+    [Fact]
+    public void Build_SubmissionDate_UsesTheSharedDateFormat()
+    {
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = new DateOnly(2026, 6, 13);
+
+        var section = CoverContentBuilder.Build(coverPage, CoverPageTemplate.Reference)
+            .Single(content => content.Section == CoverSection.SubmissionDate);
+
+        Assert.Equal(
+            "Date of Submission: " + CoverContentBuilder.FormatSubmissionDate(coverPage.SubmissionDate),
+            Flatten(section).Single());
+        Assert.Equal("13 June, 2026", CoverContentBuilder.FormatSubmissionDate(coverPage.SubmissionDate));
+    }
+
+    [Fact]
     public void Build_PreservesCoverPageValues()
     {
         var coverPage = CreateCoverPage();

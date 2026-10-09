@@ -272,6 +272,62 @@ public class CoverPreviewViewModelTests
         }
     }
 
+    [Fact]
+    public void Update_RendersTheEmptyDateLabel_WhenNoDateIsSupplied()
+    {
+        var preview = new CoverPreviewViewModel();
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        preview.Update(coverPage);
+
+        var dateSection = preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var rendered = RenderedText(preview);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal("Date of Submission: ", string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Equal(string.Empty, line.Runs[1].Text);
+        Assert.Equal(ExpectedSectionOrder, preview.Sections.Select(section => section.Section));
+        Assert.Contains("Date of Submission: ", rendered);
+        Assert.DoesNotContain("1 January", rendered);
+        Assert.DoesNotContain("0001", rendered);
+    }
+
+    [Fact]
+    public void Update_RendersTheSubmissionDateLine_WhenADateIsSupplied()
+    {
+        var preview = new CoverPreviewViewModel();
+
+        preview.Update(CreateCoverPage());
+
+        var dateSection = preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal(
+            "Date of Submission: 13 June, 2026",
+            string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Contains("Date of Submission: ", RenderedText(preview));
+        Assert.Contains("13 June, 2026", RenderedText(preview));
+    }
+
+    [Fact]
+    public void Update_RendersTheDateLabelAfterEveryOtherSection_WhenNoDateIsSupplied()
+    {
+        var preview = new CoverPreviewViewModel();
+        var coverPage = CreateCoverPage();
+        coverPage.SubmissionDate = default;
+
+        preview.Update(coverPage);
+        var dateSection = preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+
+        Assert.Equal(CoverSection.SubmissionDate, preview.Sections[^1].Section);
+        Assert.Equal(0d, dateSection.Margin.Bottom);
+        Assert.True(preview.Sections[^2].Margin.Bottom > 0d);
+    }
+
     private static string LineText(CoverPreviewSection section, int index) =>
         string.Concat(section.Lines[index].Runs.Select(run => run.Text));
 

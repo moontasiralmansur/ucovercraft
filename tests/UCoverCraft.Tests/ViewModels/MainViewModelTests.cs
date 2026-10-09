@@ -331,6 +331,155 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public void SubmissionDate_StartsUnset_OnStartup()
+    {
+        var viewModel = new MainViewModel();
+
+        Assert.Equal(string.Empty, viewModel.SubmissionDay);
+        Assert.Equal(string.Empty, viewModel.SubmissionMonth);
+        Assert.Equal(string.Empty, viewModel.SubmissionYear);
+        Assert.Equal(default(DateOnly), viewModel.BuildCoverPage().SubmissionDate);
+        Assert.Equal(string.Empty, viewModel.SubmissionDateError);
+    }
+
+    [Fact]
+    public void Preview_ShowsTheEmptyDateLabel_OnStartup()
+    {
+        var viewModel = new MainViewModel();
+
+        var rendered = RenderedText(viewModel.Preview);
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal("Date of Submission: ", string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Contains("Date of Submission: ", rendered);
+        Assert.DoesNotContain("1 January", rendered);
+        Assert.DoesNotContain("0001", rendered);
+    }
+
+    [Fact]
+    public void Preview_ShowsTheSubmissionDateLine_WhenADateIsSupplied()
+    {
+        var viewModel = new MainViewModel();
+        viewModel.SubmissionDay = "13";
+        viewModel.SubmissionMonth = "6";
+        viewModel.SubmissionYear = "2026";
+
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal(
+            "Date of Submission: 13 June, 2026",
+            string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Contains("Date of Submission: ", RenderedText(viewModel.Preview));
+        Assert.Contains("13 June, 2026", RenderedText(viewModel.Preview));
+    }
+
+    [Fact]
+    public void Preview_RendersTheValidDateExactly()
+    {
+        var viewModel = new MainViewModel();
+        viewModel.SubmissionDay = "30";
+        viewModel.SubmissionMonth = "12";
+        viewModel.SubmissionYear = "2026";
+
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal("Date of Submission: ", line.Runs[0].Text);
+        Assert.Equal("30 December, 2026", line.Runs[1].Text);
+        Assert.Equal(
+            "Date of Submission: 30 December, 2026",
+            string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Contains("Date of Submission: ", RenderedText(viewModel.Preview));
+        Assert.Contains("30 December, 2026", RenderedText(viewModel.Preview));
+    }
+
+    [Fact]
+    public void Preview_UsesTheExistingDateFormat_WhenADateIsSupplied()
+    {
+        var viewModel = new MainViewModel();
+        viewModel.SubmissionDay = "13";
+        viewModel.SubmissionMonth = "6";
+        viewModel.SubmissionYear = "2026";
+
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal(
+            CoverContentBuilder.FormatSubmissionDate(new DateOnly(2026, 6, 13)),
+            line.Runs[1].Text);
+        Assert.Equal("13 June, 2026", line.Runs[1].Text);
+    }
+
+    [Theory]
+    [InlineData("13", "", "2026")]
+    [InlineData("", "6", "2026")]
+    [InlineData("13", "6", "")]
+    [InlineData("", "", "2026")]
+    [InlineData("32", "1", "2026")]
+    [InlineData("31", "2", "2026")]
+    public void Preview_KeepsOnlyTheDateLabel_ForIncompleteAndInvalidDates(
+        string day,
+        string month,
+        string year)
+    {
+        var viewModel = new MainViewModel();
+        viewModel.SubmissionDay = day;
+        viewModel.SubmissionMonth = month;
+        viewModel.SubmissionYear = year;
+
+        Assert.Equal("Submission date is invalid.", viewModel.SubmissionDateError);
+        Assert.Equal(default(DateOnly), viewModel.BuildCoverPage().SubmissionDate);
+
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var rendered = RenderedText(viewModel.Preview);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal("Date of Submission: ", string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.Equal(string.Empty, line.Runs[1].Text);
+        Assert.Contains("Date of Submission: ", rendered);
+        Assert.DoesNotContain("1 January", rendered);
+        Assert.DoesNotContain("0001", rendered);
+    }
+
+    [Fact]
+    public void Preview_ClearsTheDateValue_WhenTheDateIsCleared()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        Assert.Contains("25 September, 2026", RenderedText(viewModel.Preview));
+
+        viewModel.SubmissionDay = string.Empty;
+
+        Assert.Equal(default(DateOnly), viewModel.BuildCoverPage().SubmissionDate);
+
+        var dateSection = viewModel.Preview.Sections
+            .Single(section => section.Section == CoverSection.SubmissionDate);
+        var line = Assert.Single(dateSection.Lines);
+
+        Assert.Equal("Date of Submission: ", string.Concat(line.Runs.Select(run => run.Text)));
+        Assert.DoesNotContain("25 September, 2026", RenderedText(viewModel.Preview));
+        Assert.DoesNotContain("0001", RenderedText(viewModel.Preview));
+    }
+
+    [Fact]
+    public void Preview_ShowsTheSubmissionDateLine_AgainAfterTheDateIsRestored()
+    {
+        var viewModel = CreatePopulatedViewModel();
+        viewModel.SubmissionDay = string.Empty;
+
+        viewModel.SubmissionDay = "25";
+
+        Assert.Contains("Date of Submission: ", RenderedText(viewModel.Preview));
+        Assert.Contains("25 September, 2026", RenderedText(viewModel.Preview));
+    }
+
+    [Fact]
     public void FreshViewModel_HasNoDisplayedErrors()
     {
         var viewModel = new MainViewModel();
