@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,6 +10,7 @@ using UCoverCraft.Core.Templates;
 
 namespace UCoverCraft.Tests.Views;
 
+[Collection("Ui")]
 public class MainWindowTests
 {
     [Fact]
@@ -84,6 +84,181 @@ public class MainWindowTests
                 var hint = Descendants<TextBlock>(window)
                     .Single(block => block.Text == viewModel.StudentLimitHint && block.Text.Length > 0);
                 Assert.Equal(Visibility.Visible, hint.Visibility);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(980d)]
+    [InlineData(1180d)]
+    [InlineData(1600d)]
+    public void FormCards_StayWithinTheFormColumnWithoutClippingAtEveryWindowWidth(double requestedWidth)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.Width = requestedWidth;
+                window.UpdateLayout();
+
+                var layout = MainLayout(window);
+                var form = layout.ColumnDefinitions[0];
+                var scrollViewer = FormScrollViewer(window);
+                var container = Assert.IsType<StackPanel>(scrollViewer.Content);
+                var cards = container.Children
+                    .OfType<Border>()
+                    .Where(border => border.IsVisible)
+                    .ToList();
+
+                Assert.NotEmpty(cards);
+                Assert.Equal(460d, form.ActualWidth, 3);
+                Assert.Equal(420d, container.MaxWidth, 3);
+                Assert.True(
+                    container.ActualWidth <= container.MaxWidth,
+                    $"Container {container.ActualWidth} exceeds its maximum width {container.MaxWidth}.");
+                Assert.Equal(ScrollBarVisibility.Auto, scrollViewer.VerticalScrollBarVisibility);
+
+                foreach (var card in cards)
+                {
+                    Assert.Equal(container.ActualWidth, card.ActualWidth, 3);
+                    Assert.True(
+                        card.ActualWidth < scrollViewer.ViewportWidth,
+                        $"Card {card.ActualWidth} overflows viewport {scrollViewer.ViewportWidth}.");
+                }
+
+                AssertCardsAreCentered(scrollViewer, container, cards);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(980d)]
+    [InlineData(1180d)]
+    [InlineData(1600d)]
+    public void FormCards_KeepTheirWidthWhenTheScrollBarVisibilityChanges(double requestedWidth)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.Width = requestedWidth;
+                window.UpdateLayout();
+
+                var layout = MainLayout(window);
+                var scrollViewer = FormScrollViewer(window);
+                var container = Assert.IsType<StackPanel>(scrollViewer.Content);
+                var cards = container.Children
+                    .OfType<Border>()
+                    .Where(border => border.IsVisible)
+                    .ToList();
+
+                Assert.NotEmpty(cards);
+
+                var columnWidths = layout.ColumnDefinitions.Select(definition => definition.ActualWidth).ToList();
+                var cardWidths = cards.Select(card => card.ActualWidth).ToList();
+                var containerWidth = container.ActualWidth;
+
+                var modes = new[]
+                {
+                    ScrollBarVisibility.Visible,
+                    ScrollBarVisibility.Disabled,
+                    ScrollBarVisibility.Auto,
+                };
+
+                foreach (var mode in modes)
+                {
+                    scrollViewer.VerticalScrollBarVisibility = mode;
+                    window.UpdateLayout();
+
+                    AssertWidthsUnchanged(columnWidths, layout.ColumnDefinitions.Select(definition => definition.ActualWidth).ToList());
+                    AssertWidthsUnchanged(cardWidths, cards.Select(card => card.ActualWidth).ToList());
+                    Assert.Equal(containerWidth, container.ActualWidth, 3);
+
+                    foreach (var card in cards)
+                    {
+                        Assert.True(
+                            card.ActualWidth <= scrollViewer.ViewportWidth,
+                            $"Card {card.ActualWidth} overflows viewport {scrollViewer.ViewportWidth} with {mode}.");
+                    }
+
+                    AssertCardsAreCentered(scrollViewer, container, cards);
+                }
+
+                scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+                window.UpdateLayout();
+
+                AssertWidthsUnchanged(cardWidths, cards.Select(card => card.ActualWidth).ToList());
+                AssertCardsAreCentered(scrollViewer, container, cards);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(980d)]
+    [InlineData(1180d)]
+    [InlineData(1600d)]
+    public void PreviewPage_KeepsItsA4DimensionsAndAspectRatioAtEveryWindowWidth(double requestedWidth)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.Width = requestedWidth;
+                window.UpdateLayout();
+
+                var layout = MainLayout(window);
+                var page = Descendants<Grid>(window)
+                    .Single(grid => Math.Abs(grid.Width - 210d * 96 / 25.4) < 0.01);
+
+                Assert.Equal(297d * 96 / 25.4, page.Height, 3);
+
+                var viewbox = Descendants<Viewbox>(window).Single();
+                Assert.Equal(Stretch.Uniform, viewbox.Stretch);
+
+                var origin = page.TransformToAncestor(window).Transform(new Point(0, 0));
+                var corner = page.TransformToAncestor(window).Transform(new Point(page.Width, page.Height));
+                var renderedWidth = corner.X - origin.X;
+                var renderedHeight = corner.Y - origin.Y;
+
+                Assert.True(renderedWidth > 0);
+                Assert.True(renderedHeight > 0);
+                Assert.Equal(210d / 297d, renderedWidth / renderedHeight, 3);
+
+                var layoutOrigin = layout.TransformToAncestor(window).Transform(new Point(0, 0));
+                var previewLeft =
+                    layoutOrigin.X
+                    + layout.ColumnDefinitions[0].ActualWidth
+                    + layout.ColumnDefinitions[1].ActualWidth;
+                var previewRight = layoutOrigin.X + layout.ActualWidth;
+                var previewBottom = layoutOrigin.Y + layout.ActualHeight;
+
+                Assert.True(origin.X >= previewLeft, $"Preview starts at {origin.X}, column at {previewLeft}.");
+                Assert.True(corner.X <= previewRight, $"Preview ends at {corner.X}, column at {previewRight}.");
+                Assert.True(corner.Y <= previewBottom, $"Preview ends at {corner.Y}, column at {previewBottom}.");
             }
             finally
             {
@@ -226,6 +401,139 @@ public class MainWindowTests
     }
 
     [Fact]
+    public void CoverPageTypeComboBox_MatchesFullWidthOfTextBoxFields()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                window.Show();
+                window.UpdateLayout();
+
+                viewModel.Number = "1";
+                viewModel.TitleTopic = "Distributed Systems";
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+
+                var comboBox = Descendants<ComboBox>(card).Single();
+                var textBoxes = VisibleTextBoxes(card).ToList();
+
+                Assert.NotEmpty(textBoxes);
+
+                var comboBoxWidth = comboBox.ActualWidth;
+                foreach (var textBox in textBoxes)
+                {
+                    var textBoxWidth = textBox.ActualWidth;
+                    Assert.True(Math.Abs(textBoxWidth - comboBoxWidth) <= 1.0,
+                        $"ComboBox width ({comboBoxWidth}) should match TextBox width ({textBoxWidth})");
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_RenderedEdgesAlignWithTextBoxFields()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                var viewModel = SelectDocumentType(window, DocumentType.Assignment);
+                window.Show();
+                window.UpdateLayout();
+
+                viewModel.Number = "1";
+                viewModel.TitleTopic = "Distributed Systems";
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+
+                var comboBox = Descendants<ComboBox>(card).Single();
+                var textBoxes = VisibleTextBoxes(card).ToList();
+
+                Assert.NotEmpty(textBoxes);
+
+                var comboBoxBounds = TestUi.GetScreenBounds(comboBox);
+                Assert.False(comboBoxBounds.IsEmpty, "ComboBox bounds should not be empty");
+
+                foreach (var textBox in textBoxes)
+                {
+                    var textBoxBounds = TestUi.GetScreenBounds(textBox);
+                    Assert.False(textBoxBounds.IsEmpty, "TextBox bounds should not be empty");
+
+                    var leftDiff = Math.Abs(comboBoxBounds.Left - textBoxBounds.Left);
+                    var rightDiff = Math.Abs(comboBoxBounds.Right - textBoxBounds.Right);
+
+                    Assert.True(leftDiff <= 1.0,
+                        $"Left edges misaligned: ComboBox={comboBoxBounds.Left:F2}, TextBox={textBoxBounds.Left:F2}, diff={leftDiff:F2}");
+                    Assert.True(rightDiff <= 1.0,
+                        $"Right edges misaligned: ComboBox={comboBoxBounds.Right:F2}, TextBox={textBoxBounds.Right:F2}, diff={rightDiff:F2}");
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_PlaceholderEdgesAlignWithTextBoxFields()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var card = CoverPageTypeCard(window);
+
+                var comboBox = Descendants<ComboBox>(card).Single();
+                var textBoxes = VisibleTextBoxes(card).ToList();
+
+                Assert.NotEmpty(textBoxes);
+
+                var comboBoxBounds = TestUi.GetScreenBounds(comboBox);
+                Assert.False(comboBoxBounds.IsEmpty, "ComboBox bounds should not be empty");
+
+                foreach (var textBox in textBoxes)
+                {
+                    var textBoxBounds = TestUi.GetScreenBounds(textBox);
+                    Assert.False(textBoxBounds.IsEmpty, "TextBox bounds should not be empty");
+
+                    var leftDiff = Math.Abs(comboBoxBounds.Left - textBoxBounds.Left);
+                    var rightDiff = Math.Abs(comboBoxBounds.Right - textBoxBounds.Right);
+
+                    Assert.True(leftDiff <= 1.0,
+                        $"Left edges misaligned: ComboBox={comboBoxBounds.Left:F2}, TextBox={textBoxBounds.Left:F2}, diff={leftDiff:F2}");
+                    Assert.True(rightDiff <= 1.0,
+                        $"Right edges misaligned: ComboBox={comboBoxBounds.Right:F2}, TextBox={textBoxBounds.Right:F2}, diff={rightDiff:F2}");
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void CoverPageTypeCard_ShowsOnlyTheComboBoxAndNumberOnStartup()
     {
         RunOnStaThread(() =>
@@ -242,7 +550,7 @@ public class MainWindowTests
                 var header = CoverPageTypeHeader(window);
                 var card = CoverPageTypeCard(window);
                 var placeholder = Descendants<TextBlock>(card)
-                    .Single(block => block.Text == "Select document type...");
+                    .Single(block => block.Text == "Select document type");
 
                 Assert.Equal("Cover Page Type", header.Text);
                 Assert.Null(viewModel.SelectedDocumentType);
@@ -529,7 +837,7 @@ public class MainWindowTests
 
                 var viewModel = (MainViewModel)window.DataContext;
                 var placeholder = Descendants<TextBlock>(window)
-                    .Single(block => block.Text == "Select document type...");
+                    .Single(block => block.Text == "Select document type");
 
                 Assert.Null(viewModel.SelectedDocumentType);
                 Assert.True(viewModel.IsDocumentTypePlaceholderVisible);
@@ -685,18 +993,25 @@ public class MainWindowTests
         }
     }
 
-    private static UCoverCraft.App.App EnsureApplication()
-    {
-        var application = Application.Current as UCoverCraft.App.App;
-        if (application is null)
-        {
-            application = new UCoverCraft.App.App();
-            application.InitializeComponent();
-            application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        }
+    private static Grid MainLayout(MainWindow window) =>
+        ((DockPanel)window.Content).Children.OfType<Grid>().Single();
 
-        return application;
+    private static ScrollViewer FormScrollViewer(MainWindow window) =>
+        Descendants<ScrollViewer>(window).Single(viewer => viewer.Content is StackPanel);
+
+    private static void AssertWidthsUnchanged(IReadOnlyList<double> expected, IReadOnlyList<double> actual)
+    {
+        Assert.Equal(expected.Count, actual.Count);
+
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i], actual[i], 3);
+        }
     }
+
+    private static UCoverCraft.App.App EnsureApplication() => TestUi.EnsureApplication();
+
+    private static void RunOnStaThread(Action action) => TestUi.RunOnStaThread(action);
 
     private static MainViewModel SelectDocumentType(MainWindow window, DocumentType type)
     {
@@ -822,80 +1137,5 @@ public class MainWindowTests
                 yield return child;
             }
         }
-    }
-
-    private static readonly object UiSync = new();
-    private static readonly Queue<Action> UiQueue = new();
-    private static Thread? uiThread;
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        var completed = false;
-
-        lock (UiSync)
-        {
-            UiQueue.Enqueue(() =>
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception exception)
-                {
-                    failure = exception;
-                }
-                finally
-                {
-                    lock (UiSync)
-                    {
-                        completed = true;
-                        Monitor.PulseAll(UiSync);
-                    }
-                }
-            });
-            Monitor.Pulse(UiSync);
-            EnsureUiThread();
-
-            while (!completed)
-            {
-                Monitor.Wait(UiSync);
-            }
-        }
-
-        if (failure is not null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
-    }
-
-    private static void EnsureUiThread()
-    {
-        if (uiThread is not null)
-        {
-            return;
-        }
-
-        uiThread = new Thread(() =>
-        {
-            while (true)
-            {
-                Action work;
-                lock (UiSync)
-                {
-                    while (UiQueue.Count == 0)
-                    {
-                        Monitor.Wait(UiSync);
-                    }
-
-                    work = UiQueue.Dequeue();
-                }
-
-                work();
-            }
-        });
-        uiThread.SetApartmentState(ApartmentState.STA);
-        uiThread.IsBackground = true;
-        uiThread.Start();
     }
 }

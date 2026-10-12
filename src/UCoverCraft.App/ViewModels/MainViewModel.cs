@@ -3,7 +3,9 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using Microsoft.Win32;
+using UCoverCraft.App.Settings;
 using UCoverCraft.Core.Mvvm;
 using UCoverCraft.Core.Models;
 using UCoverCraft.Core.Templates;
@@ -73,6 +75,7 @@ public sealed class MainViewModel : ObservableObject
 
     private readonly HashSet<string> _touchedFields = [];
     private readonly HashSet<StudentViewModel> _touchedStudents = [];
+    private readonly SettingsService _settings;
 
     private string _status = "Ready";
     private DocumentTypeOption? _selectedDocumentType;
@@ -96,9 +99,18 @@ public sealed class MainViewModel : ObservableObject
     private string _submissionDateError = string.Empty;
     private bool _hasErrors;
     private bool _isExporting;
+    private bool _isSettingsVisible;
 
     public MainViewModel()
+        : this(SettingsService.Default)
     {
+    }
+
+    public MainViewModel(SettingsService settings)
+    {
+        _settings = settings;
+        Settings = new SettingsViewModel(settings);
+
         DocumentTypes =
         [
             new DocumentTypeOption(DocumentType.Assignment, "ASSIGNMENT"),
@@ -111,6 +123,8 @@ public sealed class MainViewModel : ObservableObject
         ExportDocxCommand = new RelayCommand(ExportDocx, CanExport);
         AddStudentCommand = new RelayCommand(AddStudent, CanAddStudent);
         RemoveStudentCommand = new RelayCommand<StudentViewModel>(RemoveStudent, CanRemoveStudent);
+        ShowSettingsCommand = new RelayCommand(() => SetPage(true));
+        ShowWorkspaceCommand = new RelayCommand(() => SetPage(false));
 
         Students.CollectionChanged += OnStudentsChanged;
         Students.Add(CreateStudent());
@@ -120,6 +134,12 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public string Title => "UCoverCraft";
+
+    public SettingsViewModel Settings { get; }
+
+    public bool IsSettingsVisible => _isSettingsVisible;
+
+    public bool IsWorkspaceVisible => !_isSettingsVisible;
 
     public string Status
     {
@@ -257,6 +277,10 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand<StudentViewModel> RemoveStudentCommand { get; }
 
+    public RelayCommand ShowSettingsCommand { get; }
+
+    public RelayCommand ShowWorkspaceCommand { get; }
+
     public RelayCommand ExportPdfCommand { get; }
 
     public RelayCommand ExportDocxCommand { get; }
@@ -361,7 +385,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (!Validate())
             {
-                Status = $"Cannot export {label}: fix the validation errors first.";
+                SetStatus($"Cannot export {label}: fix the validation errors first.");
                 return;
             }
 
@@ -374,23 +398,37 @@ public sealed class MainViewModel : ObservableObject
                 AddExtension = true,
             };
 
+            var initialDirectory = ResolveExportDirectory();
+            if (initialDirectory is not null)
+            {
+                dialog.InitialDirectory = initialDirectory;
+            }
+
             if (dialog.ShowDialog() != true)
             {
-                Status = "Export cancelled.";
+                SetStatus("Export cancelled.");
                 return;
             }
 
             var outputPath = EnsureExtension(dialog.FileName, extension);
             var coverPage = BuildCoverPage();
-            Status = $"Exporting {label}...";
+            SetStatus($"Exporting {label}...");
 
             await Task.Run(() => render(coverPage, outputPath));
 
-            Status = $"{label} exported to {outputPath}";
+            SetStatus($"{label} exported to {outputPath}");
         }
-        catch (Exception exception)
+        catch (UnauthorizedAccessException)
         {
-            Status = $"{label} export failed: {exception.Message}";
+            SetStatus($"{label} export failed: access denied. Check folder permissions.");
+        }
+        catch (IOException)
+        {
+            SetStatus($"{label} export failed: unable to write file. The disk may be full or the path invalid.");
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Export cancelled.");
         }
         finally
         {
@@ -399,8 +437,28 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private void SetStatus(string message)
+    {
+        if (Application.Current?.Dispatcher.CheckAccess() == true)
+        {
+            Status = message;
+        }
+        else
+        {
+            Application.Current?.Dispatcher.InvokeAsync(() => Status = message);
+        }
+    }
+
     private string DefaultExportFileName(string extension) =>
         $"{SanitizeFileName(DocumentTitle)}{extension}";
+
+    internal string? ResolveExportDirectory() =>
+        ResolveExportDirectory(_settings.Settings.DefaultExportDirectory);
+
+    internal static string? ResolveExportDirectory(string? configuredDirectory) =>
+        !string.IsNullOrWhiteSpace(configuredDirectory) && Directory.Exists(configuredDirectory)
+            ? configuredDirectory
+            : null;
 
     internal static string SanitizeFileName(string title)
     {
@@ -427,6 +485,18 @@ public sealed class MainViewModel : ObservableObject
         path.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? path : path + extension;
 
     private bool CanExport() => !_isExporting;
+
+    private void SetPage(bool showSettings)
+    {
+        if (_isSettingsVisible == showSettings)
+        {
+            return;
+        }
+
+        _isSettingsVisible = showSettings;
+        OnPropertyChanged(nameof(IsSettingsVisible));
+        OnPropertyChanged(nameof(IsWorkspaceVisible));
+    }
 
     private void RaiseExportCommandsChanged()
     {

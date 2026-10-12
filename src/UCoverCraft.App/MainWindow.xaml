@@ -7,74 +7,91 @@
         MinWidth="980"
         MinHeight="640"
         FontFamily="Segoe UI"
-        FontSize="12"
-        Background="{StaticResource WindowBackgroundBrush}"
+        FontSize="13"
+        Background="{DynamicResource WindowBackgroundBrush}"
         Icon="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.ico"
         WindowStartupLocation="CenterScreen">
   <DockPanel>
     <Border DockPanel.Dock="Top"
-            Background="{StaticResource HeaderBrush}"
-            Padding="20,14">
-      <StackPanel Orientation="Horizontal">
-        <Image x:Name="AppHeaderIcon"
-               Source="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.png"
-               Height="42"
-               Stretch="Uniform"
-               VerticalAlignment="Center"
-               Margin="0,0,14,0" />
-        <StackPanel VerticalAlignment="Center">
-          <TextBlock Text="{Binding Title}"
-                     FontSize="18"
-                     FontWeight="SemiBold"
-                     Foreground="White" />
-          <TextBlock Text="Developed by Moontasir Al Mansur at ULAB"
-                     FontSize="12"
-                     Foreground="{StaticResource HeaderTextBrush}"
-                     Margin="0,2,0,0" />
+            Background="{DynamicResource HeaderBrush}"
+            BorderBrush="{DynamicResource CardBorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="{DynamicResource HeaderPadding}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Orientation="Horizontal">
+          <Image x:Name="AppHeaderIcon"
+                 Source="pack://application:,,,/UCoverCraft;component/assets/ucovercraft.png"
+                 Height="{DynamicResource HeaderIconSize}"
+                 Stretch="Uniform"
+                 VerticalAlignment="Center"
+                 Margin="{DynamicResource HeaderIconMargin}" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}"
+                       FontSize="21"
+                       FontWeight="Light"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Developed by Moontasir Al Mansur at ULAB"
+                       FontSize="11"
+                       Foreground="{DynamicResource HeaderTextBrush}"
+                       Margin="0,3,0,0" />
+          </StackPanel>
         </StackPanel>
-      </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Content="Cover page"
+                  Command="{Binding ShowWorkspaceCommand}"
+                  Style="{DynamicResource NavWorkspaceButtonStyle}" />
+          <Button Content="Settings"
+                  Command="{Binding ShowSettingsCommand}"
+                  Style="{DynamicResource NavSettingsButtonStyle}" />
+        </StackPanel>
+      </Grid>
     </Border>
 
     <Border DockPanel.Dock="Bottom"
-            Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource CardBorderBrush}"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="0,1,0,0"
-            Padding="20,8">
+            Padding="{DynamicResource StatusBarPadding}">
       <TextBlock Text="{Binding Status}"
                  FontSize="11"
-                 Foreground="{StaticResource TextMutedBrush}" />
+                 Foreground="{DynamicResource TextMutedBrush}" />
     </Border>
 
-    <Grid Margin="16">
+    <Grid Margin="{DynamicResource PageMargin}">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="460" />
-        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="{DynamicResource FormColumnWidthGrid}" />
+        <ColumnDefinition Width="{DynamicResource GutterWidthGrid}" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
       <ScrollViewer Grid.Column="0"
                     VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Disabled">
-        <StackPanel MaxWidth="420">
-          <Border Background="{StaticResource ErrorSurfaceBrush}"
-                  BorderBrush="{StaticResource ErrorBorderBrush}"
+                    HorizontalScrollBarVisibility="Disabled"
+                    Style="{DynamicResource FormColumnStyle}">
+        <StackPanel MaxWidth="{DynamicResource FormCardMaxWidth}">
+          <Border Background="{DynamicResource ErrorSurfaceBrush}"
+                  BorderBrush="{DynamicResource ErrorBorderBrush}"
                   BorderThickness="1"
-                  CornerRadius="6"
                   Padding="12,10"
-                  Margin="0,0,0,12"
+                  Margin="{DynamicResource ErrorBorderMargin}"
                   Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel>
               <TextBlock Text="Please fix the following:"
                          FontSize="12"
                          FontWeight="SemiBold"
-                         Foreground="{StaticResource ErrorBrush}"
+                         Foreground="{DynamicResource ErrorBrush}"
                          Margin="0,0,0,6" />
               <ItemsControl ItemsSource="{Binding ValidationErrors}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <TextBlock Text="{Binding}"
                                FontSize="12"
-                               Foreground="{StaticResource ErrorBrush}"
+                               Foreground="{DynamicResource ErrorBrush}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,2" />
                   </DataTemplate>
@@ -83,92 +100,97 @@
             </StackPanel>
           </Border>
 
-          <Border Style="{StaticResource CardStyle}">
+          <Border Style="{DynamicResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Cover Page Type" Style="{StaticResource SectionHeaderStyle}" />
-              <TextBlock Text="Cover Page Type" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Cover Page Type" Style="{DynamicResource SectionHeaderStyle}" />
+              <TextBlock Text="Cover Page Type" Style="{DynamicResource FieldLabelStyle}" />
               <Grid Margin="0,0,0,10">
                 <ComboBox ItemsSource="{Binding DocumentTypes}"
                           SelectedItem="{Binding SelectedDocumentType}"
-                          DisplayMemberPath="Label"
                           Margin="0"
-                          Style="{StaticResource FieldComboBoxStyle}" />
-                <TextBlock Text="Select document type..."
-                           Margin="8,0,26,0"
+                          Style="{DynamicResource FieldComboBoxStyle}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="Select document type"
+                           Margin="10,0,26,0"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMutedBrush}"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            IsHitTestVisible="False"
                            Visibility="{Binding IsDocumentTypePlaceholderVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
               </Grid>
               <StackPanel Visibility="{Binding IsCustomTitleEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <TextBlock Text="Cover Page Title" Style="{StaticResource FieldLabelStyle}" />
+                <TextBlock Text="Cover Page Title" Style="{DynamicResource FieldLabelStyle}" />
                 <TextBox Text="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource FieldStyle}" />
-                <TextBlock Text="{Binding DocumentTitleError}" Style="{StaticResource FieldErrorStyle}" />
+                         Style="{DynamicResource FieldStyle}" />
+                <TextBlock Text="{Binding DocumentTitleError}" Style="{DynamicResource FieldErrorStyle}" />
               </StackPanel>
-              <TextBlock Text="Number (optional)" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Number (optional)" Style="{DynamicResource FieldLabelStyle}" />
               <TextBox Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
-              <TextBlock Text="{Binding NumberError}" Style="{StaticResource FieldErrorStyle}" />
+                       Style="{DynamicResource FieldStyle}" />
+              <TextBlock Text="{Binding NumberError}" Style="{DynamicResource FieldErrorStyle}" />
               <StackPanel Visibility="{Binding IsTopicTitleVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <TextBlock Text="Topic / Title (optional)" Style="{StaticResource FieldLabelStyle}" />
+                <TextBlock Text="Topic / Title (optional)" Style="{DynamicResource FieldLabelStyle}" />
                 <TextBox Text="{Binding TitleTopic, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource FieldStyle}" />
+                         Style="{DynamicResource FieldStyle}" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Style="{StaticResource CardStyle}">
+          <Border Style="{DynamicResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Course Information" Style="{StaticResource SectionHeaderStyle}" />
-              <TextBlock Text="Course Title" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Course Information" Style="{DynamicResource SectionHeaderStyle}" />
+              <TextBlock Text="Course Title" Style="{DynamicResource FieldLabelStyle}" />
               <TextBox Text="{Binding CourseTitle, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
-              <TextBlock Text="{Binding CourseTitleError}" Style="{StaticResource FieldErrorStyle}" />
+                       Style="{DynamicResource FieldStyle}" />
+              <TextBlock Text="{Binding CourseTitleError}" Style="{DynamicResource FieldErrorStyle}" />
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="{DynamicResource GridColumnGapGrid}" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                  <TextBlock Text="Course Code" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBlock Text="Course Code" Style="{DynamicResource FieldLabelStyle}" />
                   <TextBox Text="{Binding CourseCode, UpdateSourceTrigger=PropertyChanged}"
-                           Style="{StaticResource FieldStyle}" />
-                  <TextBlock Text="{Binding CourseCodeError}" Style="{StaticResource FieldErrorStyle}" />
+                           Style="{DynamicResource FieldStyle}" />
+                  <TextBlock Text="{Binding CourseCodeError}" Style="{DynamicResource FieldErrorStyle}" />
                 </StackPanel>
                 <StackPanel Grid.Column="2">
-                  <TextBlock Text="Section" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBlock Text="Section" Style="{DynamicResource FieldLabelStyle}" />
                   <TextBox Text="{Binding Section, UpdateSourceTrigger=PropertyChanged}"
-                           Style="{StaticResource FieldStyle}" />
+                           Style="{DynamicResource FieldStyle}" />
                 </StackPanel>
               </Grid>
             </StackPanel>
           </Border>
 
-          <Border Style="{StaticResource CardStyle}">
+          <Border Style="{DynamicResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Submitted To" Style="{StaticResource SectionHeaderStyle}" />
-              <TextBlock Text="Name" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock Text="Submitted To" Style="{DynamicResource SectionHeaderStyle}" />
+              <TextBlock Text="Name" Style="{DynamicResource FieldLabelStyle}" />
               <TextBox Text="{Binding SubmittedToName, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
-              <TextBlock Text="{Binding SubmittedToNameError}" Style="{StaticResource FieldErrorStyle}" />
-              <TextBlock Text="Designation" Style="{StaticResource FieldLabelStyle}" />
+                       Style="{DynamicResource FieldStyle}" />
+              <TextBlock Text="{Binding SubmittedToNameError}" Style="{DynamicResource FieldErrorStyle}" />
+              <TextBlock Text="Designation" Style="{DynamicResource FieldLabelStyle}" />
               <TextBox Text="{Binding SubmittedToDesignation, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
-              <TextBlock Text="Department" Style="{StaticResource FieldLabelStyle}" />
+                       Style="{DynamicResource FieldStyle}" />
+              <TextBlock Text="Department" Style="{DynamicResource FieldLabelStyle}" />
               <TextBox Text="{Binding SubmittedToDepartment, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource FieldStyle}" />
+                       Style="{DynamicResource FieldStyle}" />
             </StackPanel>
           </Border>
 
-          <Border Style="{StaticResource CardStyle}">
+          <Border Style="{DynamicResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Submitted By" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Submitted By" Style="{DynamicResource SectionHeaderStyle}" />
               <ItemsControl ItemsSource="{Binding Students}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <StackPanel Margin="0,0,0,10">
+                    <StackPanel Margin="{DynamicResource FieldSpacingMargin}">
                       <Grid>
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*" />
@@ -182,20 +204,20 @@
                         <TextBlock Grid.Row="0"
                                    Grid.Column="0"
                                    Text="Name"
-                                   Style="{StaticResource FieldLabelStyle}" />
+                                   Style="{DynamicResource FieldLabelStyle}" />
                         <TextBlock Grid.Row="0"
                                    Grid.Column="1"
                                    Text="ID"
-                                   Style="{StaticResource FieldLabelStyle}" />
+                                   Style="{DynamicResource FieldLabelStyle}" />
                         <TextBox Grid.Row="1"
                                  Grid.Column="0"
                                  Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldStyle}"
+                                 Style="{DynamicResource FieldStyle}"
                                  Margin="0,0,8,0" />
                         <TextBox Grid.Row="1"
                                  Grid.Column="1"
                                  Text="{Binding StudentId, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldStyle}"
+                                 Style="{DynamicResource FieldStyle}"
                                  Margin="0,0,8,0" />
                         <Button Grid.Row="1"
                                 Grid.Column="2"
@@ -203,84 +225,81 @@
                                 VerticalAlignment="Center"
                                 Command="{Binding DataContext.RemoveStudentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
-                                Style="{StaticResource LinkButtonStyle}" />
+                                Style="{DynamicResource LinkButtonStyle}" />
                       </Grid>
                       <TextBlock Text="{Binding NameError}"
-                                 Style="{StaticResource FieldErrorStyle}"
+                                 Style="{DynamicResource FieldErrorStyle}"
                                  Margin="0,4,0,0" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Content="Add student"
-                      Command="{Binding AddStudentCommand}"
-                      Style="{StaticResource SecondaryButtonStyle}"
-                      HorizontalAlignment="Left"
-                      Margin="0,2,0,0" />
+<Button Content="Add student"
+                       Command="{Binding AddStudentCommand}"
+                       Style="{DynamicResource SecondaryButtonStyle}"
+                       HorizontalAlignment="Left"
+                       Margin="{DynamicResource AddStudentButtonMargin}" />
               <TextBlock Text="{Binding StudentLimitHint}"
-                         Style="{StaticResource FieldErrorStyle}"
+                         Style="{DynamicResource FieldErrorStyle}"
                          Margin="0,6,0,0" />
             </StackPanel>
           </Border>
 
-          <Border Style="{StaticResource CardStyle}">
+          <Border Style="{DynamicResource CardStyle}">
             <StackPanel>
-              <TextBlock Text="Submission Date" Style="{StaticResource SectionHeaderStyle}" />
+              <TextBlock Text="Submission Date" Style="{DynamicResource SectionHeaderStyle}" />
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="{DynamicResource GridColumnGapGrid}" />
                   <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="{DynamicResource GridColumnGapGrid}" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                  <TextBlock Text="Day" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBlock Text="Day" Style="{DynamicResource FieldLabelStyle}" />
                   <TextBox Text="{Binding SubmissionDay, UpdateSourceTrigger=PropertyChanged}"
-                           Style="{StaticResource FieldStyle}"
-                           Margin="0" />
+                           Style="{DynamicResource FieldStyle}" />
                 </StackPanel>
                 <StackPanel Grid.Column="2">
-                  <TextBlock Text="Month" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBlock Text="Month" Style="{DynamicResource FieldLabelStyle}" />
                   <TextBox Text="{Binding SubmissionMonth, UpdateSourceTrigger=PropertyChanged}"
-                           Style="{StaticResource FieldStyle}"
-                           Margin="0" />
+                           Style="{DynamicResource FieldStyle}" />
                 </StackPanel>
                 <StackPanel Grid.Column="4">
-                  <TextBlock Text="Year" Style="{StaticResource FieldLabelStyle}" />
+                  <TextBlock Text="Year" Style="{DynamicResource FieldLabelStyle}" />
                   <TextBox Text="{Binding SubmissionYear, UpdateSourceTrigger=PropertyChanged}"
-                           Style="{StaticResource FieldStyle}"
-                           Margin="0" />
+                           Style="{DynamicResource FieldStyle}" />
                 </StackPanel>
               </Grid>
               <TextBlock Text="{Binding SubmissionDateError}"
-                         Style="{StaticResource FieldErrorStyle}"
+                         Style="{DynamicResource FieldErrorStyle}"
                          Margin="0,4,0,0" />
             </StackPanel>
           </Border>
         </StackPanel>
       </ScrollViewer>
 
-      <Grid Grid.Column="2">
+      <Grid Grid.Column="2" Style="{DynamicResource WorkspaceContentStyle}">
         <Grid.RowDefinitions>
           <RowDefinition Height="*" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource CardBorderBrush}"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
                 BorderThickness="1"
-                CornerRadius="6"
                 Padding="16">
           <Viewbox Stretch="Uniform">
             <Border Background="White"
-                    BorderBrush="{StaticResource FieldBorderBrush}"
+                    BorderBrush="{DynamicResource FieldBorderBrush}"
                     BorderThickness="1">
               <Grid Width="{Binding Preview.PageWidth}"
                     Height="{Binding Preview.PageHeight}">
                 <StackPanel Margin="{Binding Preview.PageMargin}"
-                            TextElement.FontFamily="{Binding Preview.FontFamily}">
+                            TextElement.FontFamily="{Binding Preview.FontFamily}"
+                            TextElement.Foreground="#000000">
                   <ItemsControl ItemsSource="{Binding Preview.Sections}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
@@ -306,7 +325,7 @@
                                     <DataTemplate>
                                       <TextBlock Text="{Binding Text}"
                                                  FontSize="{Binding FontSize}"
-                                                 Style="{StaticResource PreviewTextStyle}" />
+                                                 Style="{DynamicResource PreviewTextStyle}" />
                                     </DataTemplate>
                                   </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -323,21 +342,87 @@
           </Viewbox>
         </Border>
 
-        <Grid Grid.Row="1" Margin="0,12,0,0">
+        <Grid Grid.Row="1" Margin="{DynamicResource ExportButtonRowMargin}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="{DynamicResource GridColumnGapGrid}" />
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <Button Grid.Column="0"
                   Content="Export PDF"
                   Command="{Binding ExportPdfCommand}"
-                  Style="{StaticResource AccentButtonStyle}" />
+                  Style="{DynamicResource AccentButtonStyle}" />
           <Button Grid.Column="2"
                   Content="Export DOCX"
                   Command="{Binding ExportDocxCommand}"
-                  Style="{StaticResource SecondaryButtonStyle}" />
+                  Style="{DynamicResource SecondaryButtonStyle}" />
         </Grid>
+      </Grid>
+
+      <Grid Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource SettingsContentStyle}">
+        <StackPanel Margin="{DynamicResource SettingsPanelMargin}"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    MaxWidth="{DynamicResource SettingsMaxWidth}">
+          <TextBlock Text="Settings" Style="{DynamicResource PageHeaderStyle}" />
+
+          <Border Style="{DynamicResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Appearance" Style="{DynamicResource SectionHeaderStyle}" />
+              <TextBlock Text="Theme" Style="{DynamicResource FieldLabelStyle}" />
+              <StackPanel Orientation="Horizontal" Margin="{DynamicResource FieldSpacingMargin}">
+                <Button Content="Light"
+                        Command="{Binding Settings.SetThemeCommand}"
+                        CommandParameter="Light"
+                        Style="{DynamicResource ThemeLightButtonStyle}" />
+                <Button Content="Dark"
+                        Command="{Binding Settings.SetThemeCommand}"
+                        CommandParameter="Dark"
+                        Style="{DynamicResource ThemeDarkButtonStyle}"
+                        Margin="{DynamicResource ThemeButtonMargin}" />
+                <Button Content="Follow device"
+                        Command="{Binding Settings.SetThemeCommand}"
+                        CommandParameter="FollowDevice"
+                        Style="{DynamicResource ThemeFollowButtonStyle}"
+                        Margin="0" />
+              </StackPanel>
+              <TextBlock Text="Follow device matches the light or dark appearance of Windows."
+                         Style="{DynamicResource FieldHintStyle}" />
+            </StackPanel>
+          </Border>
+
+          <Border Style="{DynamicResource CardStyle}">
+            <StackPanel>
+              <TextBlock Text="Default export directory" Style="{DynamicResource SectionHeaderStyle}" />
+<TextBlock Text="Optional starting folder for the export dialogs."
+                          Style="{DynamicResource FieldLabelStyle}" />
+               <Grid Margin="{DynamicResource FieldSpacingMargin}">
+                <TextBox Text="{Binding Settings.DefaultExportDirectory, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0"
+                         Style="{DynamicResource FieldStyle}" />
+                <TextBlock Text="No default folder selected"
+                           Margin="9,0,0,0"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Visibility="{Binding Settings.IsDefaultExportDirectoryEmpty, Converter={StaticResource BooleanToVisibilityConverter}}" />
+              </Grid>
+              <StackPanel Orientation="Horizontal">
+                <Button Content="Browse..."
+                        Command="{Binding Settings.BrowseExportDirectoryCommand}"
+                        Style="{DynamicResource SecondaryButtonStyle}"
+                        Margin="{DynamicResource BrowseButtonMargin}" />
+                <Button Content="Clear"
+                        Command="{Binding Settings.ClearExportDirectoryCommand}"
+                        Style="{DynamicResource SecondaryButtonStyle}"
+                        Margin="0" />
+              </StackPanel>
+<TextBlock Text="The folder must already exist. It is only used as the starting folder and is never created automatically."
+                          Style="{DynamicResource FieldHintStyle}"
+                          Margin="{DynamicResource SettingsHintMargin}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
       </Grid>
     </Grid>
   </DockPanel>

@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
+using UCoverCraft.App.Settings;
+using UCoverCraft.App.Themes;
 
 namespace UCoverCraft.App;
 
@@ -12,6 +14,12 @@ public partial class App : Application
     public App()
     {
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+    }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        ThemeManager.Apply(SettingsService.Default.Settings.Theme);
     }
 
     internal static void OnDispatcherUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs e) =>
