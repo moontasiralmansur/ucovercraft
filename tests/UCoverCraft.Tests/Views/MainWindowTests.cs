@@ -593,6 +593,92 @@ public class MainWindowTests
         });
     }
 
+    [Theory]
+    [InlineData(DocumentType.Assignment, "ASSIGNMENT")]
+    [InlineData(DocumentType.LabReport, "LAB REPORT")]
+    [InlineData(DocumentType.ProjectReport, "PROJECT REPORT")]
+    [InlineData(DocumentType.Custom, "CUSTOM")]
+    public void CoverPageTypeComboBox_DisplaysSelectedItemText(DocumentType type, string expectedLabel)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                var option = viewModel.DocumentTypes.First(o => o.Value == type);
+                comboBox.SelectedItem = option;
+                window.UpdateLayout();
+
+                var displayText = TestUI.Descendants<TextBlock>(comboBox).FirstOrDefault(tb => tb.Text == expectedLabel);
+                Assert.NotNull(displayText);
+                Assert.True(TestUI.IsEffectivelyVisible(displayText), $"Selected item text '{expectedLabel}' should be visible in the ComboBox");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Assignment)]
+    [InlineData(DocumentType.LabReport)]
+    [InlineData(DocumentType.ProjectReport)]
+    [InlineData(DocumentType.Custom)]
+    public void CoverPageTypeComboBox_SelectedTextHasProperLeftPadding(DocumentType type)
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                var option = viewModel.DocumentTypes.First(o => o.Value == type);
+                comboBox.SelectedItem = option;
+                window.UpdateLayout();
+
+                // Find the TextBlock displaying the selected text (inside ContentPresenter)
+                // Find the ContentPresenter that displays the selected item (has the padding)
+                var contentPresenter = TestUI.Descendants<ContentPresenter>(comboBox).FirstOrDefault(cp => cp.Name == "ContentSite");
+                Assert.NotNull(contentPresenter);
+                Assert.True(TestUI.IsEffectivelyVisible(contentPresenter));
+
+                // Get screen bounds of ComboBox and the ContentPresenter
+                var comboBoxBounds = TestUI.GetScreenBounds(comboBox);
+                var presenterBounds = TestUI.GetScreenBounds(contentPresenter);
+
+                Assert.False(comboBoxBounds.IsEmpty, "ComboBox bounds should not be empty");
+                Assert.False(presenterBounds.IsEmpty, "ContentPresenter bounds should not be empty");
+
+                // The ContentPresenter should be inset from the ComboBox left edge by at least the ControlPadding.Left (12)
+                // This matches the TextBox's internal padding (ControlPadding = 12,8)
+                var leftInset = presenterBounds.Left - comboBoxBounds.Left;
+                Assert.True(leftInset >= 10.0, $"ContentPresenter left inset ({leftInset:F1}) should be at least 10px (ControlPadding.Left=12), ComboBox left={comboBoxBounds.Left:F1}, Presenter left={presenterBounds.Left:F1}");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
     [Fact]
     public void CoverPageTypeComboBox_OpensDropdownOnMainDisplayAreaClick()
     {

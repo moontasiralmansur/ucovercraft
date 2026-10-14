@@ -821,7 +821,7 @@
     <Setter Property="ItemContainerStyle" Value="{StaticResource FieldComboBoxItemStyle}" />
     <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-<Setter Property="Template">
+    <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ComboBox">
           <Grid>
@@ -835,47 +835,48 @@
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}" />
-            <ToggleButton x:Name="ToggleButton"
+<ToggleButton x:Name="ToggleButton"
                           Grid.Column="0"
                           Grid.ColumnSpan="2"
                           Focusable="False"
                           ClickMode="Press"
                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                          Padding="0"
+                          Padding="{TemplateBinding Padding}"
                           HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch"
                           VerticalContentAlignment="Center">
-              <ToggleButton.Template>
-                <ControlTemplate TargetType="ToggleButton">
-                  <Border Background="Transparent">
-                    <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <ContentPresenter x:Name="ContentSite"
-                                        Grid.Column="0"
-                                        Margin="{TemplateBinding Padding}"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        Content="{TemplateBinding Content}"
-                                        ContentTemplate="{TemplateBinding ContentTemplate}" />
-                      <Border Grid.Column="1"
-                              Padding="12,0"
-                              Background="Transparent"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center">
-                        <Path Data="M 0,0 L 4,4 L 8,0"
-                              Stroke="{DynamicResource TextMutedBrush}"
-                              StrokeThickness="1.5"
-                              VerticalAlignment="Center"
-                              HorizontalAlignment="Center" />
-                      </Border>
-                    </Grid>
-                  </Border>
-                </ControlTemplate>
-              </ToggleButton.Template>
-            </ToggleButton>
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="Transparent">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter x:Name="ContentSite"
+                                          Grid.Column="0"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Center"
+                                          Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                          ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                          RecognizesAccessKey="True" />
+                        <Border Grid.Column="1"
+                                Padding="12,0"
+                                Background="Transparent"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                          <Path Data="M 0,0 L 4,4 L 8,0"
+                                Stroke="{DynamicResource TextMutedBrush}"
+                                StrokeThickness="1.5"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center" />
+                        </Border>
+                      </Grid>
+                    </Border>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
             <Popup x:Name="PART_Popup"
                    Placement="Bottom"
                    AllowsTransparency="True"
