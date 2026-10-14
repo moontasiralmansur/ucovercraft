@@ -30,9 +30,9 @@ public sealed class SettingsViewModelTests : IDisposable
     [Fact]
     public void SetThemeCommand_AppliesAndPersistsDarkMode()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -56,9 +56,9 @@ public sealed class SettingsViewModelTests : IDisposable
     [Fact]
     public void SetThemeCommand_FollowDevice_ResolvesTheDeviceTheme()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -82,9 +82,9 @@ public sealed class SettingsViewModelTests : IDisposable
     [Fact]
     public void SetThemeCommand_IgnoresUnknownValues()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -110,9 +110,9 @@ public sealed class SettingsViewModelTests : IDisposable
         service.Settings.Theme = ThemeMode.Dark;
         service.Save();
 
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try

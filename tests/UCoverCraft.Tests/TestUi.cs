@@ -1,7 +1,9 @@
 using System.Runtime.ExceptionServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Threading.Tasks;
 
 namespace UCoverCraft.Tests;
 
@@ -10,7 +12,7 @@ public sealed class UiTestCollection
 {
 }
 
-internal static class TestUi
+internal static class TestUI
 {
     private static readonly object UiSync = new();
     private static readonly Queue<Action> UiQueue = new();
@@ -161,6 +163,93 @@ internal static class TestUi
         var topLeft = element.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
         var bottomRight = element.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(element.ActualWidth, element.ActualHeight));
         return new Rect(topLeft, bottomRight);
+    }
+
+    public static void ClickElement(FrameworkElement element, Point? relativePosition = null)
+    {
+        if (!element.IsLoaded)
+        {
+            throw new InvalidOperationException("Element must be loaded before clicking.");
+        }
+
+        var position = relativePosition ?? new Point(element.ActualWidth / 2, element.ActualHeight / 2);
+
+        var mouseDownArgs = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.MouseLeftButtonDownEvent,
+            Source = element
+        };
+        mouseDownArgs.GetType()
+            .GetField("_mouseDevice", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseDownArgs, Mouse.PrimaryDevice);
+        mouseDownArgs.GetType()
+            .GetField("_stylusDevice", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseDownArgs, null);
+        mouseDownArgs.GetType()
+            .GetField("_timestamp", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseDownArgs, Environment.TickCount);
+        mouseDownArgs.GetType()
+            .GetField("_clickCount", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseDownArgs, 1);
+
+        element.RaiseEvent(mouseDownArgs);
+
+        var mouseUpArgs = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.MouseLeftButtonUpEvent,
+            Source = element
+        };
+        mouseUpArgs.GetType()
+            .GetField("_mouseDevice", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseUpArgs, Mouse.PrimaryDevice);
+        mouseUpArgs.GetType()
+            .GetField("_stylusDevice", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseUpArgs, null);
+        mouseUpArgs.GetType()
+            .GetField("_timestamp", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseUpArgs, Environment.TickCount);
+        mouseUpArgs.GetType()
+            .GetField("_clickCount", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(mouseUpArgs, 1);
+
+        element.RaiseEvent(mouseUpArgs);
+
+        var clickArgs = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.MouseLeftButtonDownEvent,
+            Source = element
+        };
+        clickArgs.GetType()
+            .GetField("_clickCount", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(clickArgs, 1);
+
+        element.RaiseEvent(clickArgs);
+    }
+
+    public static void ClickAt(FrameworkElement element, Point absolutePosition)
+    {
+        if (!element.IsLoaded)
+        {
+            throw new InvalidOperationException("Element must be loaded before clicking.");
+        }
+
+        var elementTopLeft = element.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
+        var relativePosition = new Point(absolutePosition.X - elementTopLeft.X, absolutePosition.Y - elementTopLeft.Y);
+        ClickElement(element, relativePosition);
+    }
+
+    public static async Task WaitForConditionAsync(Func<bool> condition, int timeoutMs = 5000, int pollIntervalMs = 50)
+    {
+        var start = Environment.TickCount;
+        while (!condition())
+        {
+            if (Environment.TickCount - start > timeoutMs)
+            {
+                throw new TimeoutException($"Condition not met within {timeoutMs}ms");
+            }
+            await Task.Delay(pollIntervalMs);
+            Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+        }
     }
 
     private static void EnsureUiThread()

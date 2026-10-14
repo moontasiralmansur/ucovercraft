@@ -42,7 +42,7 @@
           </StackPanel>
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-          <Button Content="Cover page"
+          <Button Content="Cover Page"
                   Command="{Binding ShowWorkspaceCommand}"
                   Style="{DynamicResource NavWorkspaceButtonStyle}" />
           <Button Content="Settings"
@@ -357,6 +357,100 @@
                   Command="{Binding ExportDocxCommand}"
                   Style="{DynamicResource SecondaryButtonStyle}" />
         </Grid>
+
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                Padding="24"
+                Visibility="{Binding ExportState, Converter={StaticResource ExportStateToVisibilityConverter}, ConverterParameter=Exporting}"
+                IsHitTestVisible="{Binding ExportState, Converter={StaticResource ExportStateToBooleanConverter}, ConverterParameter=Exporting}">
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="280">
+            <ProgressBar IsIndeterminate="True"
+                         Height="4"
+                         Margin="0,0,0,16"
+                         Style="{DynamicResource ExportProgressBarStyle}" />
+            <TextBlock Text="{Binding ExportFormat, StringFormat='Exporting {0}...'}"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                Padding="24"
+                Visibility="{Binding ExportState, Converter={StaticResource ExportStateToVisibilityConverter}, ConverterParameter=Success}"
+                IsHitTestVisible="{Binding ExportState, Converter={StaticResource ExportStateToBooleanConverter}, ConverterParameter=Success}">
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="320">
+            <TextBlock Text="Export successful"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,12" />
+            <TextBlock Text="{Binding ExportOutputPath}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis"
+                       Margin="0,0,0,16" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button Content="Open File"
+                      Command="{Binding OpenFileCommand}"
+                      Style="{DynamicResource AccentButtonStyle}"
+                      Margin="0,0,8,0" />
+              <Button Content="Open Folder"
+                      Command="{Binding OpenFolderCommand}"
+                      Style="{DynamicResource SecondaryButtonStyle}"
+                      Margin="0,0,8,0" />
+              <Button Content="Copy Path"
+                      Command="{Binding CopyPathCommand}"
+                      Style="{DynamicResource SecondaryButtonStyle}"
+                      Margin="0,0,8,0" />
+              <Button Content="Dismiss"
+                      Command="{Binding DismissExportSuccessCommand}"
+                      Style="{DynamicResource SecondaryButtonStyle}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                Padding="24"
+                Visibility="{Binding ExportState, Converter={StaticResource ExportStateToVisibilityConverter}, ConverterParameter=Failure}"
+                IsHitTestVisible="{Binding ExportState, Converter={StaticResource ExportStateToBooleanConverter}, ConverterParameter=Failure}">
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="320">
+            <TextBlock Text="Export failed"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource ErrorBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8" />
+            <TextBlock Text="{Binding ExportErrorMessage}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button Content="Retry"
+                      Command="{Binding RetryExportCommand}"
+                      Style="{DynamicResource AccentButtonStyle}"
+                      Margin="0,0,8,0" />
+              <Button Content="Dismiss"
+                      Command="{Binding DismissExportErrorCommand}"
+                      Style="{DynamicResource SecondaryButtonStyle}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
       </Grid>
 
       <Grid Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource SettingsContentStyle}">

@@ -1,9 +1,11 @@
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Threading.Tasks;
 using UCoverCraft.App;
 using UCoverCraft.App.ViewModels;
 using UCoverCraft.Core.Templates;
@@ -38,19 +40,19 @@ public class MainWindowTests
                 window.Show();
                 window.UpdateLayout();
 
-                var texts = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+                var texts = TestUI.Descendants<TextBlock>(window).Select(block => block.Text).ToList();
                 Assert.Contains("LAB REPORT", texts);
                 Assert.Contains("Submitted by:", texts);
 
                 var titleSize = 14d * 96 / 72;
-                var title = Descendants<TextBlock>(window)
+                var title = TestUI.Descendants<TextBlock>(window)
                     .Single(block => block.Text == "LAB REPORT" && Math.Abs(block.FontSize - titleSize) < 0.01);
                 Assert.Equal(new FontFamily("Times New Roman"), title.FontFamily);
                 Assert.Equal(FontWeights.Bold, title.FontWeight);
                 Assert.Equal(titleSize, title.FontSize, 3);
 
                 var logo = Assert.Single(
-                    Descendants<Image>(window),
+                    TestUI.Descendants<Image>(window),
                     image => image != window.AppHeaderIcon && image.Visibility == Visibility.Visible);
                 var appAssembly = typeof(MainWindow).Assembly.GetName().Name;
                 logo.Source = new BitmapImage(new Uri(
@@ -60,7 +62,7 @@ public class MainWindowTests
                 Assert.Equal(363, bitmap.PixelWidth);
                 Assert.Equal(139, bitmap.PixelHeight);
 
-                var page = Descendants<Grid>(window)
+                var page = TestUI.Descendants<Grid>(window)
                     .Single(grid => Math.Abs(grid.Width - 210d * 96 / 25.4) < 0.01);
                 Assert.Equal(297d * 96 / 25.4, page.Height, 3);
 
@@ -77,11 +79,11 @@ public class MainWindowTests
                 Assert.Contains("Maximum of 10", viewModel.StudentLimitHint);
                 Assert.DoesNotContain("24", viewModel.StudentLimitHint);
 
-                var addButton = Descendants<Button>(window)
+                var addButton = TestUI.Descendants<Button>(window)
                     .Single(button => button.Content as string == "Add student");
                 Assert.False(addButton.IsEnabled);
 
-                var hint = Descendants<TextBlock>(window)
+                var hint = TestUI.Descendants<TextBlock>(window)
                     .Single(block => block.Text == viewModel.StudentLimitHint && block.Text.Length > 0);
                 Assert.Equal(Visibility.Visible, hint.Visibility);
             }
@@ -231,12 +233,12 @@ public class MainWindowTests
                 window.UpdateLayout();
 
                 var layout = MainLayout(window);
-                var page = Descendants<Grid>(window)
+                var page = TestUI.Descendants<Grid>(window)
                     .Single(grid => Math.Abs(grid.Width - 210d * 96 / 25.4) < 0.01);
 
                 Assert.Equal(297d * 96 / 25.4, page.Height, 3);
 
-                var viewbox = Descendants<Viewbox>(window).Single();
+                var viewbox = TestUI.Descendants<Viewbox>(window).Single();
                 Assert.Equal(Stretch.Uniform, viewbox.Stretch);
 
                 var origin = page.TransformToAncestor(window).Transform(new Point(0, 0));
@@ -280,14 +282,14 @@ public class MainWindowTests
                 window.Show();
                 window.UpdateLayout();
 
-                var header = NearestAncestor<Border>(
-                    Descendants<TextBlock>(window)
+                var header = TestUI.NearestAncestor<Border>(
+                    TestUI.Descendants<TextBlock>(window)
                         .Single(block => block.Text == "Developed by Moontasir Al Mansur at ULAB"));
-                var labels = Descendants<TextBlock>(header).Select(block => block.Text).ToList();
+                var labels = TestUI.Descendants<TextBlock>(header).Select(block => block.Text).ToList();
 
                 Assert.Contains("UCoverCraft", labels);
                 Assert.Contains("Developed by Moontasir Al Mansur at ULAB", labels);
-                Assert.Same(window.AppHeaderIcon, Assert.Single(Descendants<Image>(header)));
+                Assert.Same(window.AppHeaderIcon, Assert.Single(TestUI.Descendants<Image>(header)));
                 Assert.NotNull(window.Icon);
             }
             finally
@@ -385,7 +387,7 @@ public class MainWindowTests
                 Assert.Equal(
                     new[] { "Cover Page Type", "Number (optional)", "Topic / Title (optional)" },
                     labels);
-                Assert.Single(Descendants<ComboBox>(card));
+                Assert.Single(TestUI.Descendants<ComboBox>(card));
 
                 var inputs = VisibleTextBoxes(card).Select(box => box.Text).ToList();
 
@@ -420,7 +422,7 @@ public class MainWindowTests
 
                 var card = CoverPageTypeCard(window);
 
-                var comboBox = Descendants<ComboBox>(card).Single();
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
                 var textBoxes = VisibleTextBoxes(card).ToList();
 
                 Assert.NotEmpty(textBoxes);
@@ -460,17 +462,17 @@ public class MainWindowTests
 
                 var card = CoverPageTypeCard(window);
 
-                var comboBox = Descendants<ComboBox>(card).Single();
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
                 var textBoxes = VisibleTextBoxes(card).ToList();
 
                 Assert.NotEmpty(textBoxes);
 
-                var comboBoxBounds = TestUi.GetScreenBounds(comboBox);
+                var comboBoxBounds = TestUI.GetScreenBounds(comboBox);
                 Assert.False(comboBoxBounds.IsEmpty, "ComboBox bounds should not be empty");
 
                 foreach (var textBox in textBoxes)
                 {
-                    var textBoxBounds = TestUi.GetScreenBounds(textBox);
+                    var textBoxBounds = TestUI.GetScreenBounds(textBox);
                     Assert.False(textBoxBounds.IsEmpty, "TextBox bounds should not be empty");
 
                     var leftDiff = Math.Abs(comboBoxBounds.Left - textBoxBounds.Left);
@@ -504,17 +506,17 @@ public class MainWindowTests
 
                 var card = CoverPageTypeCard(window);
 
-                var comboBox = Descendants<ComboBox>(card).Single();
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
                 var textBoxes = VisibleTextBoxes(card).ToList();
 
                 Assert.NotEmpty(textBoxes);
 
-                var comboBoxBounds = TestUi.GetScreenBounds(comboBox);
+                var comboBoxBounds = TestUI.GetScreenBounds(comboBox);
                 Assert.False(comboBoxBounds.IsEmpty, "ComboBox bounds should not be empty");
 
                 foreach (var textBox in textBoxes)
                 {
-                    var textBoxBounds = TestUi.GetScreenBounds(textBox);
+                    var textBoxBounds = TestUI.GetScreenBounds(textBox);
                     Assert.False(textBoxBounds.IsEmpty, "TextBox bounds should not be empty");
 
                     var leftDiff = Math.Abs(comboBoxBounds.Left - textBoxBounds.Left);
@@ -525,6 +527,240 @@ public class MainWindowTests
                     Assert.True(rightDiff <= 1.0,
                         $"Right edges misaligned: ComboBox={comboBoxBounds.Right:F2}, TextBox={textBoxBounds.Right:F2}, diff={rightDiff:F2}");
                 }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_OpensDropdownAndSelectsItem()
+    {
+        RunOnStaThread(() =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                // Initially no selection
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.Equal(Visibility.Visible, TestUI.Descendants<TextBlock>(card)
+                    .Single(b => b.Text == "Select document type").Visibility);
+
+                // Open dropdown by setting IsDropDownOpen
+                comboBox.IsDropDownOpen = true;
+                window.UpdateLayout();
+
+                // Verify dropdown is open
+                Assert.True(comboBox.IsDropDownOpen);
+
+                // Select an item programmatically (simulating user selection)
+                var assignmentOption = viewModel.DocumentTypes.First(o => o.Value == DocumentType.Assignment);
+                comboBox.SelectedItem = assignmentOption;
+                window.UpdateLayout();
+
+                // Verify selection worked
+                Assert.NotNull(viewModel.SelectedDocumentType);
+                Assert.Equal(DocumentType.Assignment, viewModel.SelectedDocumentType!.Value);
+                Assert.Equal("ASSIGNMENT", viewModel.DocumentTitle);
+                Assert.False(viewModel.IsDocumentTypePlaceholderVisible);
+                Assert.True(viewModel.IsTopicTitleVisible);
+
+                // Verify placeholder is hidden
+                var placeholder = TestUI.Descendants<TextBlock>(card)
+                    .Single(b => b.Text == "Select document type");
+                Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+
+                // Close dropdown
+                comboBox.IsDropDownOpen = false;
+                window.UpdateLayout();
+                Assert.False(comboBox.IsDropDownOpen);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_OpensDropdownOnMainDisplayAreaClick()
+    {
+        RunOnStaThread(async () =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                // Initially no selection, dropdown closed
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.False(comboBox.IsDropDownOpen);
+
+                // Find the ToggleButton in the ComboBox template
+                var toggleButton = TestUI.Descendants<ToggleButton>(comboBox).Single(tb => tb.Name == "ToggleButton");
+
+                // Find the ContentPresenter (main display area) inside the ToggleButton template
+                var contentPresenter = TestUI.Descendants<ContentPresenter>(toggleButton).Single(cp => cp.Name == "ContentSite");
+
+                // Ensure the element is arranged
+                contentPresenter.UpdateLayout();
+                window.UpdateLayout();
+
+                // Click the main display area (left side of the ComboBox)
+                // Click at 25% width to avoid the arrow area
+                var clickPoint = new Point(contentPresenter.ActualWidth * 0.25, contentPresenter.ActualHeight / 2);
+                TestUI.ClickElement(contentPresenter, clickPoint);
+
+                // Process pending UI work
+                await TestUI.WaitForConditionAsync(() => comboBox.IsDropDownOpen);
+
+                // Verify dropdown opened from the click
+                Assert.True(comboBox.IsDropDownOpen, "Dropdown should open when clicking the main display area");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_OpensDropdownOnArrowClick()
+    {
+        RunOnStaThread(async () =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                // Initially no selection, dropdown closed
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.False(comboBox.IsDropDownOpen);
+
+                // Find the ToggleButton in the ComboBox template
+                var toggleButton = TestUI.Descendants<ToggleButton>(comboBox).Single(tb => tb.Name == "ToggleButton");
+
+                // Find the arrow Border (contains the Path) inside the ToggleButton template
+                // The arrow is in Grid.Column="1" of the ToggleButton's internal Grid
+                var arrowBorder = TestUI.Descendants<Border>(toggleButton).Single(b => b.Background != null && b.Background == System.Windows.Media.Brushes.Transparent && b.Padding.Left == 12);
+
+                // Ensure the element is arranged
+                arrowBorder.UpdateLayout();
+                window.UpdateLayout();
+
+                // Click the arrow area (right side of the ComboBox)
+                var clickPoint = new Point(arrowBorder.ActualWidth / 2, arrowBorder.ActualHeight / 2);
+                TestUI.ClickElement(arrowBorder, clickPoint);
+
+                // Process pending UI work
+                await TestUI.WaitForConditionAsync(() => comboBox.IsDropDownOpen);
+
+                // Verify dropdown opened from the click
+                Assert.True(comboBox.IsDropDownOpen, "Dropdown should open when clicking the arrow area");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void CoverPageTypeComboBox_SelectsItemViaMouseClickAndClosesDropdown()
+    {
+        RunOnStaThread(async () =>
+        {
+            EnsureApplication();
+
+            var window = new MainWindow();
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+
+                var viewModel = (MainViewModel)window.DataContext;
+                var card = CoverPageTypeCard(window);
+                var comboBox = TestUI.Descendants<ComboBox>(card).Single();
+
+                // Initially no selection
+                Assert.Null(viewModel.SelectedDocumentType);
+                Assert.False(comboBox.IsDropDownOpen);
+
+                // Find the ToggleButton and click main display to open dropdown
+                var toggleButton = TestUI.Descendants<ToggleButton>(comboBox).Single(tb => tb.Name == "ToggleButton");
+                var contentPresenter = TestUI.Descendants<ContentPresenter>(toggleButton).Single(cp => cp.Name == "ContentSite");
+
+                contentPresenter.UpdateLayout();
+                window.UpdateLayout();
+
+                // Click to open dropdown
+                var clickPoint = new Point(contentPresenter.ActualWidth * 0.25, contentPresenter.ActualHeight / 2);
+                TestUI.ClickElement(contentPresenter, clickPoint);
+
+                await TestUI.WaitForConditionAsync(() => comboBox.IsDropDownOpen);
+                Assert.True(comboBox.IsDropDownOpen);
+
+                // Wait for popup to be loaded and find the ComboBoxItem for Assignment
+                var popup = TestUI.Descendants<Popup>(comboBox).Single(p => p.Name == "PART_Popup");
+                await TestUI.WaitForConditionAsync(() => popup.IsOpen);
+
+                // Find the ItemsPresenter and its children (ComboBoxItems)
+                var itemsPresenter = TestUI.Descendants<ItemsPresenter>(popup).Single();
+                itemsPresenter.UpdateLayout();
+                window.UpdateLayout();
+
+                var comboBoxItems = TestUI.Descendants<ComboBoxItem>(itemsPresenter).ToList();
+                Assert.NotEmpty(comboBoxItems);
+
+                // Find the Assignment item (first item)
+                var assignmentItem = comboBoxItems.First();
+                assignmentItem.UpdateLayout();
+
+                // Click the Assignment item
+                TestUI.ClickElement(assignmentItem, new Point(assignmentItem.ActualWidth / 2, assignmentItem.ActualHeight / 2));
+
+                // Wait for dropdown to close and selection to update
+                await TestUI.WaitForConditionAsync(() => !comboBox.IsDropDownOpen);
+                await TestUI.WaitForConditionAsync(() => viewModel.SelectedDocumentType != null);
+
+                // Verify selection worked and dropdown closed
+                Assert.False(comboBox.IsDropDownOpen, "Dropdown should close after item selection");
+                Assert.NotNull(viewModel.SelectedDocumentType);
+                Assert.Equal(DocumentType.Assignment, viewModel.SelectedDocumentType!.Value);
+                Assert.Equal("ASSIGNMENT", viewModel.DocumentTitle);
+                Assert.False(viewModel.IsDocumentTypePlaceholderVisible);
+                Assert.True(viewModel.IsTopicTitleVisible);
+
+                // Verify placeholder is hidden
+                var placeholder = TestUI.Descendants<TextBlock>(card)
+                    .Single(b => b.Text == "Select document type");
+                Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
             }
             finally
             {
@@ -549,7 +785,7 @@ public class MainWindowTests
                 var viewModel = (MainViewModel)window.DataContext;
                 var header = CoverPageTypeHeader(window);
                 var card = CoverPageTypeCard(window);
-                var placeholder = Descendants<TextBlock>(card)
+                var placeholder = TestUI.Descendants<TextBlock>(card)
                     .Single(block => block.Text == "Select document type");
 
                 Assert.Equal("Cover Page Type", header.Text);
@@ -566,8 +802,8 @@ public class MainWindowTests
                 Assert.Single(inputs);
                 Assert.Equal(string.Empty, inputs[0].Text);
                 Assert.Equal(string.Empty, viewModel.Number);
-                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Cover Page Title")));
-                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Topic / Title (optional)")));
+                Assert.False(IsVisibleInTree(TextBoxAfter(card, "Cover Page Title")));
+                Assert.False(IsVisibleInTree(TextBoxAfter(card, "Topic / Title (optional)")));
             }
             finally
             {
@@ -601,7 +837,7 @@ public class MainWindowTests
                 var numberBox = TextBoxAfter(card, "Number (optional)");
 
                 Assert.Contains("Number (optional)", VisibleFieldLabels(card));
-                Assert.True(IsEffectivelyVisible(numberBox));
+                Assert.True(IsVisibleInTree(numberBox));
                 Assert.Equal("7", numberBox.Text);
             }
             finally
@@ -630,13 +866,13 @@ public class MainWindowTests
                 window.UpdateLayout();
 
                 var card = CoverPageTypeCard(window);
-                var label = Descendants<TextBlock>(card)
+                var label = TestUI.Descendants<TextBlock>(card)
                     .Single(block => block.Text == "Topic / Title (optional)");
                 var topicBox = TextBoxAfter(card, "Topic / Title (optional)");
 
                 Assert.True(viewModel.IsTopicTitleVisible);
-                Assert.True(IsEffectivelyVisible(label));
-                Assert.True(IsEffectivelyVisible(topicBox));
+                Assert.True(IsVisibleInTree(label));
+                Assert.True(IsVisibleInTree(topicBox));
 
                 viewModel.TitleTopic = "Distributed Systems";
                 window.UpdateLayout();
@@ -677,9 +913,9 @@ public class MainWindowTests
                 Assert.False(viewModel.IsCustomTitleEditable);
                 Assert.DoesNotContain("Cover Page Title", labels);
                 Assert.DoesNotContain("Document Title", labels);
-                Assert.False(IsEffectivelyVisible(TextBoxAfter(card, "Cover Page Title")));
+                Assert.False(IsVisibleInTree(TextBoxAfter(card, "Cover Page Title")));
                 Assert.DoesNotContain(
-                    Descendants<TextBlock>(window),
+                    TestUI.Descendants<TextBlock>(window),
                     block => block.Text == "Automatically set from Document Type.");
                 Assert.Contains("Number (optional)", labels);
                 Assert.Contains("Topic / Title (optional)", labels);
@@ -717,14 +953,14 @@ public class MainWindowTests
                 Assert.Equal("Cover page title is required.", viewModel.DocumentTitleError);
                 Assert.Contains("Cover page title is required.", viewModel.ValidationErrors);
 
-                var inline = Descendants<TextBlock>(card)
+                var inline = TestUI.Descendants<TextBlock>(card)
                     .Single(block => block.Text == "Cover page title is required.");
 
-                Assert.True(IsEffectivelyVisible(inline));
+                Assert.True(IsVisibleInTree(inline));
 
-                var banner = NearestAncestor<Border>(
-                    Descendants<TextBlock>(window).Single(block => block.Text == "Please fix the following:"));
-                var bannerTexts = Descendants<TextBlock>(banner).Select(block => block.Text).ToList();
+                var banner = TestUI.NearestAncestor<Border>(
+                    TestUI.Descendants<TextBlock>(window).Single(block => block.Text == "Please fix the following:"));
+                var bannerTexts = TestUI.Descendants<TextBlock>(banner).Select(block => block.Text).ToList();
 
                 Assert.Contains("Cover page title is required.", bannerTexts);
                 Assert.DoesNotContain(bannerTexts, text => text.StartsWith("Document title", StringComparison.Ordinal));
@@ -749,7 +985,7 @@ public class MainWindowTests
                 window.Show();
                 window.UpdateLayout();
 
-                var scrollViewer = Descendants<ScrollViewer>(window)
+                var scrollViewer = TestUI.Descendants<ScrollViewer>(window)
                     .Single(viewer => viewer.Content is StackPanel);
                 var container = Assert.IsType<StackPanel>(scrollViewer.Content);
                 var cards = container.Children
@@ -807,7 +1043,7 @@ public class MainWindowTests
 
                 var titleBox = TextBoxAfter(card, "Cover Page Title");
 
-                Assert.True(IsEffectivelyVisible(titleBox));
+                Assert.True(IsVisibleInTree(titleBox));
                 Assert.True(titleBox.IsEnabled);
 
                 titleBox.Text = "Smart Campus Navigation";
@@ -836,7 +1072,7 @@ public class MainWindowTests
                 window.UpdateLayout();
 
                 var viewModel = (MainViewModel)window.DataContext;
-                var placeholder = Descendants<TextBlock>(window)
+                var placeholder = TestUI.Descendants<TextBlock>(window)
                     .Single(block => block.Text == "Select document type");
 
                 Assert.Null(viewModel.SelectedDocumentType);
@@ -844,7 +1080,7 @@ public class MainWindowTests
                 Assert.False(viewModel.IsTopicTitleVisible);
                 Assert.Equal(Visibility.Visible, placeholder.Visibility);
                 Assert.DoesNotContain(
-                    Descendants<TextBlock>(window),
+                    TestUI.Descendants<TextBlock>(window),
                     block => block.Text == "Automatically set from Document Type.");
                 Assert.Equal(
                     new[] { "ASSIGNMENT", "LAB REPORT", "PROJECT REPORT", "CUSTOM" },
@@ -884,7 +1120,7 @@ public class MainWindowTests
                 viewModel.TitleTopic = "Distributed Systems";
                 window.UpdateLayout();
 
-                var texts = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+                var texts = TestUI.Descendants<TextBlock>(window).Select(block => block.Text).ToList();
 
                 Assert.Contains("ASSIGNMENT 01", texts);
                 Assert.Contains("Title: ", texts);
@@ -894,7 +1130,7 @@ public class MainWindowTests
                 viewModel.TitleTopic = string.Empty;
                 window.UpdateLayout();
 
-                var cleared = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+                var cleared = TestUI.Descendants<TextBlock>(window).Select(block => block.Text).ToList();
 
                 Assert.Contains("ASSIGNMENT", cleared);
                 Assert.DoesNotContain(cleared, text => text.StartsWith("Title: ", StringComparison.Ordinal));
@@ -920,7 +1156,7 @@ public class MainWindowTests
                 window.Show();
                 window.UpdateLayout();
 
-                var before = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+                var before = TestUI.Descendants<TextBlock>(window).Select(block => block.Text).ToList();
 
                 Assert.Contains("Date of Submission: ", before);
                 Assert.DoesNotContain(before, text => text.Contains("0001", StringComparison.Ordinal));
@@ -934,7 +1170,7 @@ public class MainWindowTests
                 viewModel.SubmissionYear = "2026";
                 window.UpdateLayout();
 
-                var after = Descendants<TextBlock>(window).Select(block => block.Text).ToList();
+                var after = TestUI.Descendants<TextBlock>(window).Select(block => block.Text).ToList();
 
                 Assert.Contains("Date of Submission: ", after);
                 Assert.Contains("13 June, 2026", after);
@@ -959,10 +1195,10 @@ public class MainWindowTests
                 window.Show();
                 window.UpdateLayout();
 
-                var card = NearestAncestor<Border>(
-                    Descendants<TextBlock>(window).Single(block => block.Text == "Submitted By"));
+                var card = TestUI.NearestAncestor<Border>(
+                    TestUI.Descendants<TextBlock>(window).Single(block => block.Text == "Submitted By"));
                 var fieldLabelStyle = (Style)Application.Current!.Resources["FieldLabelStyle"];
-                var labels = Descendants<TextBlock>(card)
+                var labels = TestUI.Descendants<TextBlock>(card)
                     .Where(block => block.Style == fieldLabelStyle)
                     .Select(block => block.Text)
                     .ToList();
@@ -997,7 +1233,7 @@ public class MainWindowTests
         ((DockPanel)window.Content).Children.OfType<Grid>().Single();
 
     private static ScrollViewer FormScrollViewer(MainWindow window) =>
-        Descendants<ScrollViewer>(window).Single(viewer => viewer.Content is StackPanel);
+        TestUI.Descendants<ScrollViewer>(window).Single(viewer => viewer.Content is StackPanel);
 
     private static void AssertWidthsUnchanged(IReadOnlyList<double> expected, IReadOnlyList<double> actual)
     {
@@ -1009,9 +1245,9 @@ public class MainWindowTests
         }
     }
 
-    private static UCoverCraft.App.App EnsureApplication() => TestUi.EnsureApplication();
+    private static UCoverCraft.App.App EnsureApplication() => TestUI.EnsureApplication();
 
-    private static void RunOnStaThread(Action action) => TestUi.RunOnStaThread(action);
+    private static void RunOnStaThread(Action action) => TestUI.RunOnStaThread(action);
 
     private static MainViewModel SelectDocumentType(MainWindow window, DocumentType type)
     {
@@ -1024,25 +1260,25 @@ public class MainWindowTests
     private static Style ResourceStyle(string key) => (Style)Application.Current!.Resources[key];
 
     private static TextBlock CoverPageTypeHeader(MainWindow window) =>
-        Descendants<TextBlock>(window)
+        TestUI.Descendants<TextBlock>(window)
             .Single(block => block.Text == "Cover Page Type" && block.Style == ResourceStyle("SectionHeaderStyle"));
 
     private static Border CoverPageTypeCard(MainWindow window) =>
-        NearestAncestor<Border>(CoverPageTypeHeader(window));
+        TestUI.NearestAncestor<Border>(CoverPageTypeHeader(window));
 
     private static IReadOnlyList<string> VisibleFieldLabels(Border card) =>
-        Descendants<TextBlock>(card)
+        TestUI.Descendants<TextBlock>(card)
             .Where(block => block.Style == ResourceStyle("FieldLabelStyle"))
-            .Where(block => IsEffectivelyVisible(block))
+            .Where(block => IsVisibleInTree(block))
             .Select(block => block.Text)
             .ToList();
 
     private static IReadOnlyList<TextBox> VisibleTextBoxes(Border card) =>
-        Descendants<TextBox>(card).Where(block => IsEffectivelyVisible(block)).ToList();
+        TestUI.Descendants<TextBox>(card).Where(block => IsVisibleInTree(block)).ToList();
 
     private static TextBox TextBoxAfter(Border card, string labelText)
     {
-        var label = Descendants<TextBlock>(card).Single(block => block.Text == labelText);
+        var label = TestUI.Descendants<TextBlock>(card).Single(block => block.Text == labelText);
         var children = ((Panel)VisualTreeHelper.GetParent(label)).Children;
         var start = children.IndexOf(label);
 
@@ -1057,7 +1293,7 @@ public class MainWindowTests
         throw new InvalidOperationException($"No textbox follows '{labelText}'.");
     }
 
-    private static bool IsEffectivelyVisible(DependencyObject? node)
+    private static bool IsVisibleInTree(DependencyObject? node)
     {
         while (node is not null)
         {
@@ -1103,39 +1339,5 @@ public class MainWindowTests
         }
 
         return sums;
-    }
-
-    private static T NearestAncestor<T>(DependencyObject node)
-        where T : DependencyObject
-    {
-        while (node is not null)
-        {
-            if (node is T match)
-            {
-                return match;
-            }
-
-            node = VisualTreeHelper.GetParent(node);
-        }
-
-        throw new InvalidOperationException($"No {typeof(T).Name} ancestor was found.");
-    }
-
-    private static IEnumerable<T> Descendants<T>(DependencyObject root)
-        where T : DependencyObject
-    {
-        if (root is T match)
-        {
-            yield return match;
-        }
-
-        var count = VisualTreeHelper.GetChildrenCount(root);
-        for (var i = 0; i < count; i++)
-        {
-            foreach (var child in Descendants<T>(VisualTreeHelper.GetChild(root, i)))
-            {
-                yield return child;
-            }
-        }
     }
 }

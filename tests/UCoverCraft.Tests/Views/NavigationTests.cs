@@ -17,9 +17,9 @@ public sealed class NavigationTests
 [Fact]
     public void Navigation_SwitchesBetweenTheWorkspaceAndTheSettingsPage()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
             {
-                TestUi.EnsureApplication();
+                TestUI.EnsureApplication();
                 var window = new MainWindow();
 
                 try
@@ -52,7 +52,7 @@ public sealed class NavigationTests
                 Assert.False(FormScrollViewer(window).IsHitTestVisible);
                 Assert.False(WorkspaceRoot(window).IsHitTestVisible);
 
-                var settingsTexts = TestUi.Descendants<TextBlock>(SettingsRoot(window))
+                var settingsTexts = TestUI.Descendants<TextBlock>(SettingsRoot(window))
                     .Select(block => block.Text)
                     .ToList();
                 Assert.Contains("Settings", settingsTexts);
@@ -142,9 +142,9 @@ public sealed class NavigationTests
     [Fact]
     public void SettingsPage_ExposesThemeChoicesAndExportDirectoryControls()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
             var settingsRoot = Path.Combine(
                 Path.GetTempPath(),
@@ -169,7 +169,7 @@ public sealed class NavigationTests
                 var settings = SettingsRoot(window);
                 Assert.Equal(1.0, settings.Opacity, 1);
                 Assert.True(settings.IsHitTestVisible);
-                var themeButtons = TestUi.Descendants<Button>(settings)
+                var themeButtons = TestUI.Descendants<Button>(settings)
                     .Where(button => button.Command == viewModel.Settings.SetThemeCommand)
                     .ToList();
 
@@ -187,9 +187,9 @@ public sealed class NavigationTests
                 Assert.Equal(accent, ((SolidColorBrush)themeButtons[1].Background!).Color);
                 Assert.NotEqual(accent, ((SolidColorBrush)themeButtons[2].Background!).Color);
 
-                var browse = TestUi.Descendants<Button>(settings)
+                var browse = TestUI.Descendants<Button>(settings)
                     .Single(button => button.Content as string == "Browse...");
-                var clear = TestUi.Descendants<Button>(settings)
+                var clear = TestUI.Descendants<Button>(settings)
                     .Single(button => button.Content as string == "Clear");
 
                 Assert.Same(viewModel.Settings.BrowseExportDirectoryCommand, browse.Command);
@@ -223,5 +223,5 @@ public sealed class NavigationTests
         MainLayout(window).Children.OfType<Grid>().Single(child => Grid.GetColumn(child) == 0 && Grid.GetColumnSpan(child) == 3 && child.Style == (Style)window.FindResource("SettingsContentStyle"));
 
     private static ScrollViewer FormScrollViewer(MainWindow window) =>
-        TestUi.Descendants<ScrollViewer>(window).Single(viewer => viewer.Content is StackPanel);
+        TestUI.Descendants<ScrollViewer>(window).Single(viewer => viewer.Content is StackPanel);
 }

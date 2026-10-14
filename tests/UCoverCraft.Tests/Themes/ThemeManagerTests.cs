@@ -18,9 +18,9 @@ public sealed class ThemeManagerTests
     [Fact]
     public void Apply_Light_SwitchesTheApplicationResourcesToTheLightPalette()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -42,9 +42,9 @@ public sealed class ThemeManagerTests
     [Fact]
     public void Apply_Dark_SwitchesTheApplicationResourcesToTheDarkPalette()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -66,9 +66,9 @@ public sealed class ThemeManagerTests
     [Fact]
     public void Apply_FollowDevice_ResolvesTheCurrentDeviceTheme()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -93,9 +93,9 @@ public sealed class ThemeManagerTests
     [Fact]
     public void RefreshIfFollowDevice_DoesNotOverrideAnExplicitMode()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
 
             try
@@ -118,9 +118,9 @@ public sealed class ThemeManagerTests
     [Fact]
     public void Apply_UpdatesAnOpenWindowWithoutChangingThePreviewPage()
     {
-        TestUi.RunOnStaThread(() =>
+        TestUI.RunOnStaThread(() =>
         {
-            TestUi.EnsureApplication();
+            TestUI.EnsureApplication();
             var originalMode = ThemeManager.Mode;
             var window = new MainWindow();
 
@@ -134,8 +134,8 @@ public sealed class ThemeManagerTests
 
                 Assert.Equal(DarkWindowBackground, ((SolidColorBrush)window.Background!).Color);
 
-                var field = TestUi.Descendants<TextBox>(window)
-                    .First(box => TestUi.IsEffectivelyVisible(box));
+                var field = TestUI.Descendants<TextBox>(window)
+                    .First(box => TestUI.IsEffectivelyVisible(box));
                 Assert.Equal(DarkSurface, ((SolidColorBrush)field.Background!).Color);
 
                 var pageBorder = PreviewPageBorder(window);
@@ -158,7 +158,7 @@ public sealed class ThemeManagerTests
 
     private static Border PreviewPageBorder(MainWindow window)
     {
-        var pageGrid = TestUi.Descendants<Grid>(window)
+        var pageGrid = TestUI.Descendants<Grid>(window)
             .Single(grid => Math.Abs(grid.Width - 210d * 96 / 25.4) < 0.01);
 
         return (Border)VisualTreeHelper.GetParent(pageGrid);

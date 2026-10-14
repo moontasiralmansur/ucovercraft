@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using Microsoft.Win32;
+using UCoverCraft.App.Services;
 using UCoverCraft.App.Settings;
 using UCoverCraft.Core.Mvvm;
 using UCoverCraft.Core.Models;
@@ -13,6 +14,14 @@ using DocxRenderer = UCoverCraft.Docx.CoverPageRenderer;
 using PdfRenderer = UCoverCraft.Pdf.CoverPageRenderer;
 
 namespace UCoverCraft.App.ViewModels;
+
+public enum ExportState
+{
+    Idle,
+    Exporting,
+    Success,
+    Failure
+}
 
 public sealed class MainViewModel : ObservableObject
 {
@@ -76,6 +85,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly HashSet<string> _touchedFields = [];
     private readonly HashSet<StudentViewModel> _touchedStudents = [];
     private readonly SettingsService _settings;
+    private readonly IFileLauncher _fileLauncher;
 
     private string _status = "Ready";
     private DocumentTypeOption? _selectedDocumentType;
@@ -99,16 +109,21 @@ public sealed class MainViewModel : ObservableObject
     private string _submissionDateError = string.Empty;
     private bool _hasErrors;
     private bool _isExporting;
+    private ExportState _exportState = ExportState.Idle;
+    private string _exportFormat = string.Empty;
+    private string _exportErrorMessage = string.Empty;
+    private string _exportOutputPath = string.Empty;
     private bool _isSettingsVisible;
 
     public MainViewModel()
-        : this(SettingsService.Default)
+        : this(SettingsService.Default, new DefaultFileLauncher())
     {
     }
 
-    public MainViewModel(SettingsService settings)
+    public MainViewModel(SettingsService settings, IFileLauncher? fileLauncher = null)
     {
         _settings = settings;
+        _fileLauncher = fileLauncher ?? new DefaultFileLauncher();
         Settings = new SettingsViewModel(settings);
 
         DocumentTypes =
@@ -119,12 +134,18 @@ public sealed class MainViewModel : ObservableObject
             new DocumentTypeOption(DocumentType.Custom, "CUSTOM"),
         ];
 
-        ExportPdfCommand = new RelayCommand(ExportPdf, CanExport);
-        ExportDocxCommand = new RelayCommand(ExportDocx, CanExport);
+        ExportPdfCommand = new RelayCommand(async () => await ExportPdfAsync(), CanExport);
+        ExportDocxCommand = new RelayCommand(async () => await ExportDocxAsync(), CanExport);
         AddStudentCommand = new RelayCommand(AddStudent, CanAddStudent);
         RemoveStudentCommand = new RelayCommand<StudentViewModel>(RemoveStudent, CanRemoveStudent);
         ShowSettingsCommand = new RelayCommand(() => SetPage(true));
         ShowWorkspaceCommand = new RelayCommand(() => SetPage(false));
+        OpenFileCommand = new RelayCommand(OpenFile, CanOpenFile);
+        OpenFolderCommand = new RelayCommand(OpenFolder, CanOpenFolder);
+        CopyPathCommand = new RelayCommand(CopyPath, CanCopyPath);
+        DismissExportSuccessCommand = new RelayCommand(DismissExportSuccess);
+        RetryExportCommand = new RelayCommand(async () => await RetryExportAsync());
+        DismissExportErrorCommand = new RelayCommand(DismissExportError);
 
         Students.CollectionChanged += OnStudentsChanged;
         Students.Add(CreateStudent());
@@ -145,6 +166,28 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _status;
         set => SetProperty(ref _status, value);
+    }
+
+    public bool IsExporting => _isExporting;
+
+    public string ExportFormat => _exportFormat;
+
+    public ExportState ExportState
+    {
+        get => _exportState;
+        private set => SetProperty(ref _exportState, value);
+    }
+
+    public string ExportErrorMessage
+    {
+        get => _exportErrorMessage;
+        private set => SetProperty(ref _exportErrorMessage, value);
+    }
+
+    public string ExportOutputPath
+    {
+        get => _exportOutputPath;
+        private set => SetProperty(ref _exportOutputPath, value);
     }
 
     public IReadOnlyList<DocumentTypeOption> DocumentTypes { get; }
@@ -285,6 +328,18 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand ExportDocxCommand { get; }
 
+    public RelayCommand OpenFileCommand { get; }
+
+    public RelayCommand OpenFolderCommand { get; }
+
+    public RelayCommand CopyPathCommand { get; }
+
+    public RelayCommand DismissExportSuccessCommand { get; }
+
+    public RelayCommand RetryExportCommand { get; }
+
+    public RelayCommand DismissExportErrorCommand { get; }
+
     public string DocumentTitleError
     {
         get => _documentTitleError;
@@ -361,10 +416,10 @@ public sealed class MainViewModel : ObservableObject
         SubmissionDate = submissionDate,
     };
 
-    private async void ExportPdf() =>
+    private async Task ExportPdfAsync() =>
         await ExportAsync("PDF", ".pdf", "PDF document|*.pdf", PdfRenderer.Render);
 
-    private async void ExportDocx() =>
+    private async Task ExportDocxAsync() =>
         await ExportAsync("DOCX", ".docx", "Word document|*.docx", DocxRenderer.Render);
 
     private async Task ExportAsync(
@@ -379,13 +434,18 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _isExporting = true;
+        _exportFormat = label;
+        _exportErrorMessage = string.Empty;
+        _exportOutputPath = string.Empty;
+        ExportState = ExportState.Exporting;
         RaiseExportCommandsChanged();
 
         try
         {
             if (!Validate())
             {
-                SetStatus($"Cannot export {label}: fix the validation errors first.");
+                ExportErrorMessage = $"Cannot export {label}: fix the validation errors first.";
+                ExportState = ExportState.Failure;
                 return;
             }
 
@@ -406,29 +466,34 @@ public sealed class MainViewModel : ObservableObject
 
             if (dialog.ShowDialog() != true)
             {
-                SetStatus("Export cancelled.");
+                ExportState = ExportState.Idle;
+                _exportFormat = string.Empty;
                 return;
             }
 
             var outputPath = EnsureExtension(dialog.FileName, extension);
             var coverPage = BuildCoverPage();
-            SetStatus($"Exporting {label}...");
+            _exportOutputPath = outputPath;
 
             await Task.Run(() => render(coverPage, outputPath));
 
-            SetStatus($"{label} exported to {outputPath}");
+            ExportState = ExportState.Success;
         }
         catch (UnauthorizedAccessException)
         {
-            SetStatus($"{label} export failed: access denied. Check folder permissions.");
+            ExportErrorMessage = $"{label} export failed: access denied. Check folder permissions.";
+            ExportState = ExportState.Failure;
         }
         catch (IOException)
         {
-            SetStatus($"{label} export failed: unable to write file. The disk may be full or the path invalid.");
+            ExportErrorMessage = $"{label} export failed: unable to write file. The disk may be full or the path invalid.";
+            ExportState = ExportState.Failure;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex)
         {
-            SetStatus("Export cancelled.");
+            System.Diagnostics.Debug.WriteLine($"Export failed: {ex}");
+            ExportErrorMessage = $"{label} export failed: {ex.Message}";
+            ExportState = ExportState.Failure;
         }
         finally
         {
@@ -486,6 +551,78 @@ public sealed class MainViewModel : ObservableObject
 
     private bool CanExport() => !_isExporting;
 
+    public async Task RetryExportAsync()
+    {
+        if (_isExporting)
+        {
+            return;
+        }
+
+        if (ExportState == ExportState.Failure)
+        {
+            if (_exportFormat.Equals("PDF", StringComparison.OrdinalIgnoreCase))
+            {
+                await ExportPdfAsync();
+            }
+            else if (_exportFormat.Equals("DOCX", StringComparison.OrdinalIgnoreCase))
+            {
+                await ExportDocxAsync();
+            }
+        }
+    }
+
+    public void ResetExportState()
+    {
+        if (ExportState != ExportState.Idle)
+        {
+            ExportState = ExportState.Idle;
+            _exportErrorMessage = string.Empty;
+            _exportOutputPath = string.Empty;
+            _exportFormat = string.Empty;
+            RaiseExportCommandsChanged();
+        }
+    }
+
+    private bool CanOpenFile() => ExportState == ExportState.Success && !string.IsNullOrEmpty(_exportOutputPath);
+
+    private void OpenFile()
+    {
+        if (CanOpenFile())
+        {
+            _fileLauncher.OpenFile(_exportOutputPath, error => Status = error);
+        }
+    }
+
+    private bool CanOpenFolder() => ExportState == ExportState.Success && !string.IsNullOrEmpty(_exportOutputPath);
+
+    private void OpenFolder()
+    {
+        if (CanOpenFolder())
+        {
+            _fileLauncher.OpenFolder(_exportOutputPath, error => Status = error);
+        }
+    }
+
+    private bool CanCopyPath() => ExportState == ExportState.Success && !string.IsNullOrEmpty(_exportOutputPath);
+
+    private void CopyPath()
+    {
+        if (CanCopyPath())
+        {
+            _fileLauncher.CopyToClipboard(_exportOutputPath, error => Status = error);
+        }
+    }
+
+    private void DismissExportSuccess()
+    {
+        ResetExportState();
+    }
+
+    private void DismissExportError()
+    {
+        ResetExportState();
+    }
+
     private void SetPage(bool showSettings)
     {
         if (_isSettingsVisible == showSettings)
@@ -502,6 +639,9 @@ public sealed class MainViewModel : ObservableObject
     {
         ExportPdfCommand.RaiseCanExecuteChanged();
         ExportDocxCommand.RaiseCanExecuteChanged();
+        OpenFileCommand.RaiseCanExecuteChanged();
+        OpenFolderCommand.RaiseCanExecuteChanged();
+        CopyPathCommand.RaiseCanExecuteChanged();
     }
 
     private void SetEdited(ref string field, string? value, [CallerMemberName] string propertyName = "")
